@@ -10,7 +10,7 @@
     return fetch(resource, init)
   }
   var api = function(method, endpoint, data) {
-    var headers = {'Content-Type': 'application/json'}
+    var headers = { 'Content-Type': 'application/json' }
     return xfetch(endpoint, {
       method: method,
       headers: headers,
@@ -82,7 +82,7 @@
       },
       mark_read: function(query) {
         return api('put', './api/items' + param(query))
-      },
+      }
     },
     settings: {
       get: function() {
@@ -106,6 +106,9 @@
     },
     crawl: function(url) {
       return api('get', './page?url=' + encodeURIComponent(url)).then(json)
+    },
+    add_to_pocket: function(url) {
+      return api('get', './api/addToPocket?url=' + encodeURIComponent(url))
     }
   }
 })()

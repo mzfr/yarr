@@ -55,7 +55,7 @@ Vue.component('drag', {
 Vue.component('dropdown', {
   props: ['class', 'toggle-class', 'ref', 'drop', 'title'],
   data: function() {
-    return {open: false}
+    return { open: false }
   },
   template: `
     <div class="dropdown" :class="$attrs.class">
@@ -119,7 +119,7 @@ Vue.component('modal', {
     </div>
   `,
   data: function() {
-    return {opening: false}
+    return { opening: false }
   },
   watch: {
     'open': function(newVal) {
@@ -155,7 +155,7 @@ function dateRepr(d) {
   else if (sec < 604800)  // less than a week
     out = Math.round(sec / 86400) + 'd'
   else
-    out = d.toLocaleDateString(undefined, {year: "numeric", month: "long", day: "numeric"})
+    out = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
 
   if (neg) return '-' + out
   return out
@@ -247,7 +247,7 @@ var vm = new Vue({
         folder.feeds = feedsByFolders[folder.id]
         return folder
       })
-      folders.push({id: null, feeds: feedsByFolders[null]})
+      folders.push({ id: null, feeds: feedsByFolders[null] })
       return folders
     },
     feedsById: function() {
@@ -268,7 +268,7 @@ var vm = new Vue({
       if (type == 'folder')
         folder = this.foldersById[guid] || {}
 
-      return {type: type, feed: feed, folder: folder}
+      return { type: type, feed: feed, folder: folder }
     },
     itemSelectedContent: function() {
       if (!this.itemSelected) return ''
@@ -299,7 +299,7 @@ var vm = new Vue({
           return acc + stat.unread
         }, 0)
         if (unreadCount) {
-          title += ' ('+unreadCount+')'
+          title += ' (' + unreadCount + ')'
         }
         document.title = title
         this.computeStats()
@@ -307,13 +307,13 @@ var vm = new Vue({
     },
     'filterSelected': function(newVal, oldVal) {
       if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({filter: newVal}).then(this.refreshItems.bind(this, false))
+      api.settings.update({ filter: newVal }).then(this.refreshItems.bind(this, false))
       this.itemSelected = null
       this.computeStats()
     },
     'feedSelected': function(newVal, oldVal) {
       if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({feed: newVal}).then(this.refreshItems.bind(this, false))
+      api.settings.update({ feed: newVal }).then(this.refreshItems.bind(this, false))
       this.itemSelected = null
       if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0
     },
@@ -328,7 +328,7 @@ var vm = new Vue({
       api.items.get(newVal).then(function(item) {
         this.itemSelectedDetails = item
         if (this.itemSelectedDetails.status == 'unread') {
-          api.items.update(this.itemSelectedDetails.id, {status: 'read'}).then(function() {
+          api.items.update(this.itemSelectedDetails.id, { status: 'read' }).then(function() {
             this.feedStats[this.itemSelectedDetails.feed_id].unread -= 1
             var itemInList = this.items.find(function(i) { return i.id == item.id })
             if (itemInList) itemInList.status = 'read'
@@ -342,19 +342,19 @@ var vm = new Vue({
     }, 500),
     'itemSortNewestFirst': function(newVal, oldVal) {
       if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({sort_newest_first: newVal}).then(vm.refreshItems.bind(this, false))
+      api.settings.update({ sort_newest_first: newVal }).then(vm.refreshItems.bind(this, false))
     },
     'feedListWidth': debounce(function(newVal, oldVal) {
       if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({feed_list_width: newVal})
+      api.settings.update({ feed_list_width: newVal })
     }, 1000),
     'itemListWidth': debounce(function(newVal, oldVal) {
       if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({item_list_width: newVal})
+      api.settings.update({ item_list_width: newVal })
     }, 1000),
     'refreshRate': function(newVal, oldVal) {
       if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({refresh_rate: newVal})
+      api.settings.update({ refresh_rate: newVal })
     },
   },
   methods: {
@@ -415,7 +415,7 @@ var vm = new Vue({
 
       var query = this.getItemsQuery()
       if (loadMore) {
-        query.after = vm.items[vm.items.length-1].id
+        query.after = vm.items[vm.items.length - 1].id
       }
 
       this.loading.items = true
@@ -454,7 +454,7 @@ var vm = new Vue({
       var query = this.getItemsQuery()
       api.items.mark_read(query).then(function() {
         vm.items = []
-        vm.itemsPage = {'cur': 1, 'num': 1}
+        vm.itemsPage = { 'cur': 1, 'num': 1 }
         vm.itemSelected = null
         vm.itemsHasMore = false
         vm.refreshStats()
@@ -462,7 +462,7 @@ var vm = new Vue({
     },
     toggleFolderExpanded: function(folder) {
       folder.is_expanded = !folder.is_expanded
-      api.folders.update(folder.id, {is_expanded: folder.is_expanded})
+      api.folders.update(folder.id, { is_expanded: folder.is_expanded })
     },
     formatDate: function(datestr) {
       var options = {
@@ -473,7 +473,7 @@ var vm = new Vue({
     },
     moveFeed: function(feed, folder) {
       var folder_id = folder ? folder.id : null
-      api.feeds.update(feed.id, {folder_id: folder_id}).then(function() {
+      api.feeds.update(feed.id, { folder_id: folder_id }).then(function() {
         feed.folder_id = folder_id
         vm.refreshStats()
       })
@@ -481,8 +481,8 @@ var vm = new Vue({
     moveFeedToNewFolder: function(feed) {
       var title = prompt('Enter folder name:')
       if (!title) return
-      api.folders.create({'title': title}).then(function(folder) {
-        api.feeds.update(feed.id, {folder_id: folder.id}).then(function() {
+      api.folders.create({ 'title': title }).then(function(folder) {
+        api.feeds.update(feed.id, { folder_id: folder.id }).then(function() {
           vm.refreshFeeds().then(function() {
             vm.refreshStats()
           })
@@ -492,7 +492,7 @@ var vm = new Vue({
     createNewFeedFolder: function() {
       var title = prompt('Enter folder name:')
       if (!title) return
-      api.folders.create({'title': title}).then(function(result) {
+      api.folders.create({ 'title': title }).then(function(result) {
         vm.refreshFeeds().then(function() {
           vm.$nextTick(function() {
             if (vm.$refs.newFeedFolder) {
@@ -505,7 +505,7 @@ var vm = new Vue({
     renameFolder: function(folder) {
       var newTitle = prompt('Enter new title', folder.title)
       if (newTitle) {
-        api.folders.update(folder.id, {title: newTitle}).then(function() {
+        api.folders.update(folder.id, { title: newTitle }).then(function() {
           folder.title = newTitle
           this.folders.sort(function(a, b) {
             return a.title.localeCompare(b.title)
@@ -516,7 +516,7 @@ var vm = new Vue({
     deleteFolder: function(folder) {
       if (confirm('Are you sure you want to delete ' + folder.title + '?')) {
         api.folders.delete(folder.id).then(function() {
-          if (vm.feedSelected === 'folder:'+folder.id) {
+          if (vm.feedSelected === 'folder:' + folder.id) {
             vm.items = []
             vm.feedSelected = ''
           }
@@ -528,7 +528,7 @@ var vm = new Vue({
     renameFeed: function(feed) {
       var newTitle = prompt('Enter new title', feed.title)
       if (newTitle) {
-        api.feeds.update(feed.id, {title: newTitle}).then(function() {
+        api.feeds.update(feed.id, { title: newTitle }).then(function() {
           feed.title = newTitle
         })
       }
@@ -538,8 +538,8 @@ var vm = new Vue({
         api.feeds.delete(feed.id).then(function() {
           // unselect feed to prevent reading properties of null in template
           var isSelected = !vm.feedSelected
-            || (vm.feedSelected === 'feed:'+feed.id
-            || (feed.folder_id && vm.feedSelected === 'folder:'+feed.folder_id));
+            || (vm.feedSelected === 'feed:' + feed.id
+              || (feed.folder_id && vm.feedSelected === 'folder:' + feed.folder_id));
           if (isSelected) vm.feedSelected = null
 
           vm.refreshStats()
@@ -582,7 +582,7 @@ var vm = new Vue({
         }
       }.bind(this)
 
-      api.items.update(item.id, {status: newstatus}).then(function() {
+      api.items.update(item.id, { status: newstatus }).then(function() {
         updateStats(oldstatus, -1)
         updateStats(newstatus, +1)
 
@@ -596,6 +596,10 @@ var vm = new Vue({
     },
     toggleItemRead: function(item) {
       this.toggleItemStatus(item, 'unread', 'read')
+    },
+    addToPocket: function(item) {
+      console.log("WORKING!")
+      api.add_to_pocket(item.link)
     },
     importOPML: function(event) {
       var input = event.target
