@@ -52,7 +52,7 @@ func ExtractContent(page io.Reader) (string, error) {
 	removeUnlikelyCandidates(root)
 
 	scores := getCandidates(root)
-	//log.Printf("[Readability] Candidates: %v", candidates)
+	// log.Printf("[Readability] Candidates: %v", candidates)
 
 	best := getTopCandidate(scores)
 	if best == nil {
@@ -64,7 +64,7 @@ func ExtractContent(page io.Reader) (string, error) {
 			return "", errors.New("failed to extract content")
 		}
 	}
-	//log.Printf("[Readability] TopCandidate: %v", topCandidate)
+	// log.Printf("[Readability] TopCandidate: %v", topCandidate)
 
 	output := getArticle(best, scores)
 	return output, nil

@@ -15,8 +15,10 @@ import (
 	"github.com/nkanaev/yarr/src/storage"
 )
 
-var Version string = "0.0"
-var GitHash string = "unknown"
+var (
+	Version string = "0.0"
+	GitHash string = "unknown"
+)
 
 var OptList = make([]string, 0)
 
@@ -79,7 +81,7 @@ func main() {
 
 	log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
 	if logfile != "" {
-		file, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		file, err := os.OpenFile(logfile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0o644)
 		if err != nil {
 			log.Fatal("Failed to setup log file: ", err)
 		}
@@ -96,7 +98,7 @@ func main() {
 
 	if db == "" {
 		storagePath := filepath.Join(configPath, "yarr")
-		if err := os.MkdirAll(storagePath, 0755); err != nil {
+		if err := os.MkdirAll(storagePath, 0o755); err != nil {
 			log.Fatal("Failed to create app config dir: ", err)
 		}
 		db = filepath.Join(storagePath, "storage.db")

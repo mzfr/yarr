@@ -515,7 +515,6 @@ func (s *Server) addToPocket(c *router.Context) {
 	responseBody, _ := json.Marshal(postBody)
 
 	resp, err := http.Post(postUrl, "application/json", bytes.NewBuffer(responseBody))
-
 	if err != nil {
 		log.Fatalf("An Error Occured %v", err)
 	}

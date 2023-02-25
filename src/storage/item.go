@@ -316,7 +316,6 @@ func (s *Storage) DeleteOldItems() {
 		where status != ?
 		group by i.feed_id
 	`, itemsKeepSize, STARRED)
-
 	if err != nil {
 		log.Print(err)
 		return
