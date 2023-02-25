@@ -175,7 +175,7 @@ func getExtraAttributes(tagName string) ([]string, []string) {
 
 func isValidTag(tagName string) bool {
 	x := allowedTags.has(tagName) || allowedSvgTags.has(tagName) || allowedSvgFilters.has(tagName)
-	//fmt.Println(tagName, x)
+	// fmt.Println(tagName, x)
 	return x
 }
 
@@ -413,7 +413,7 @@ func isValidWidthOrDensityDescriptor(value string) bool {
 }
 
 func isValidDataAttribute(value string) bool {
-	var dataAttributeAllowList = []string{
+	dataAttributeAllowList := []string{
 		"data:image/avif",
 		"data:image/apng",
 		"data:image/png",

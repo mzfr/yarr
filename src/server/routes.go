@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
@@ -56,6 +57,7 @@ func (s *Server) handler() http.Handler {
 	r.For("/opml/export", s.handleOPMLExport)
 	r.For("/page", s.handlePageCrawl)
 	r.For("/logout", s.handleLogout)
+	r.For("/api/addToPocket", s.addToPocket)
 
 	return r
 }
@@ -503,6 +505,21 @@ func (s *Server) handlePageCrawl(c *router.Context) {
 	c.JSON(http.StatusOK, map[string]string{
 		"content": content,
 	})
+}
+
+func (s *Server) addToPocket(c *router.Context) {
+	url := c.Req.URL.Query().Get("url")
+	postUrl := "https://getpocket.com/v3/add"
+
+	postBody := map[string]string{"url": url, "consumer_key": "106123-85ba1ab21425a4c0c4f3db8", "access_token": "011f0045-8cec-ef2a-5aa9-e4f52e"}
+	responseBody, _ := json.Marshal(postBody)
+
+	resp, err := http.Post(postUrl, "application/json", bytes.NewBuffer(responseBody))
+	if err != nil {
+		log.Fatalf("An Error Occured %v", err)
+	}
+	defer resp.Body.Close()
+	c.Out.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) handleLogout(c *router.Context) {

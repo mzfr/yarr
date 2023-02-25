@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 package systray
@@ -771,7 +772,6 @@ func registerSystray() {
 		log.Printf("Unable to create menu: %v", err)
 		return
 	}
-
 }
 
 func nativeLoop() {
@@ -821,7 +821,7 @@ func iconBytesToFilePath(iconBytes []byte) (string, error) {
 	iconFilePath := filepath.Join(os.TempDir(), "systray_temp_icon_"+dataHash)
 
 	if _, err := os.Stat(iconFilePath); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(iconFilePath, iconBytes, 0644); err != nil {
+		if err := ioutil.WriteFile(iconFilePath, iconBytes, 0o644); err != nil {
 			return "", err
 		}
 	}

@@ -27,9 +27,11 @@ func (f Folder) AllFeeds() []Feed {
 	return feeds
 }
 
-var e = html.EscapeString
-var indent = "  "
-var nl = "\n"
+var (
+	e      = html.EscapeString
+	indent = "  "
+	nl     = "\n"
+)
 
 func (f Folder) outline(level int) string {
 	builder := strings.Builder{}

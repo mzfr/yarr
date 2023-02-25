@@ -2,9 +2,10 @@ package platform
 
 import (
 	"fmt"
-	"golang.org/x/sys/windows"
 	"os"
 	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
 func AttachConsole() error {

@@ -81,13 +81,15 @@ func DiscoverFeed(candidateUrl string) (*DiscoverResult, error) {
 	return result, nil
 }
 
-var emptyIcon = make([]byte, 0)
-var imageTypes = map[string]bool{
-	"image/x-icon": true,
-	"image/png":    true,
-	"image/jpeg":   true,
-	"image/gif":    true,
-}
+var (
+	emptyIcon  = make([]byte, 0)
+	imageTypes = map[string]bool{
+		"image/x-icon": true,
+		"image/png":    true,
+		"image/jpeg":   true,
+		"image/gif":    true,
+	}
+)
 
 func findFavicon(siteUrl, feedUrl string) (*[]byte, error) {
 	urls := make([]string, 0)
