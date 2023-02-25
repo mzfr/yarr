@@ -12,16 +12,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/nkanaev/yarr/src/assets"
-	"github.com/nkanaev/yarr/src/content/readability"
-	"github.com/nkanaev/yarr/src/content/sanitizer"
-	"github.com/nkanaev/yarr/src/content/silo"
-	"github.com/nkanaev/yarr/src/server/auth"
-	"github.com/nkanaev/yarr/src/server/gzip"
-	"github.com/nkanaev/yarr/src/server/opml"
-	"github.com/nkanaev/yarr/src/server/router"
-	"github.com/nkanaev/yarr/src/storage"
-	"github.com/nkanaev/yarr/src/worker"
+	"github.com/mzfr/yarr/src/assets"
+	"github.com/mzfr/yarr/src/content/readability"
+	"github.com/mzfr/yarr/src/content/sanitizer"
+	"github.com/mzfr/yarr/src/content/silo"
+	"github.com/mzfr/yarr/src/server/auth"
+	"github.com/mzfr/yarr/src/server/gzip"
+	"github.com/mzfr/yarr/src/server/opml"
+	"github.com/mzfr/yarr/src/server/router"
+	"github.com/mzfr/yarr/src/storage"
+	"github.com/mzfr/yarr/src/utils"
+	"github.com/mzfr/yarr/src/worker"
 )
 
 func (s *Server) handler() http.Handler {
@@ -510,8 +511,8 @@ func (s *Server) handlePageCrawl(c *router.Context) {
 func (s *Server) addToPocket(c *router.Context) {
 	url := c.Req.URL.Query().Get("url")
 	postUrl := "https://getpocket.com/v3/add"
-
-	postBody := map[string]string{"url": url, "consumer_key": "106123-85ba1ab21425a4c0c4f3db8", "access_token": "011f0045-8cec-ef2a-5aa9-e4f52e"}
+	consumer_key, access_token, err := utils.getPocketAuth()
+	postBody := map[string]string{"url": url, "consumer_key": consumer_key, "access_token": access_token}
 	responseBody, _ := json.Marshal(postBody)
 
 	resp, err := http.Post(postUrl, "application/json", bytes.NewBuffer(responseBody))

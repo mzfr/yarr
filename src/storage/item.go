@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nkanaev/yarr/src/content/htmlutil"
+	"github.com/mzfr/yarr/src/content/htmlutil"
 )
 
 type ItemStatus int

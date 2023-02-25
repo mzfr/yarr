@@ -1,4 +1,4 @@
-module github.com/nkanaev/yarr
+module github.com/mzfr/yarr
 
 go 1.16
 

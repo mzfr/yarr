@@ -10,9 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/nkanaev/yarr/src/platform"
-	"github.com/nkanaev/yarr/src/server"
-	"github.com/nkanaev/yarr/src/storage"
+	"github.com/mzfr/yarr/src/platform"
+	"github.com/mzfr/yarr/src/server"
+	"github.com/mzfr/yarr/src/storage"
+	"github.com/mzfr/yarr/src/utils"
 )
 
 var (
@@ -70,6 +71,7 @@ func main() {
 	flag.StringVar(&keyfile, "key-file", opt("YARR_KEYFILE", ""), "`path` to key file for https")
 	flag.StringVar(&db, "db", opt("YARR_DB", ""), "storage file `path`")
 	flag.StringVar(&logfile, "log-file", opt("YARR_LOGFILE", ""), "`path` to log file to use instead of stdout")
+
 	flag.BoolVar(&ver, "version", false, "print application version")
 	flag.BoolVar(&open, "open", false, "open the server in browser")
 	flag.Parse()
