@@ -11,7 +11,7 @@ It is written in Go with the frontend in Vue.js. The storage is backed by SQLite
 
  The original repository can be found here - https://github.com/nkanaev/yarr
 
-I really loved using this RSS reader because this was simple to run and had all the functionality I was looking for in an RSS reader, except one. That was to share/add the item to your pocket https://getpocket.com/ account. And the original author didn't want to introduce any 3rd party dependencies https://github.com/nkanaev/yarr/issues/57#issue-864736485 in their version of the application. So I decided to fork it and add that(and maybe a few more) feature to my own fork.
+I really loved using this RSS reader because this was simple to run and had all the functionality I was looking for in an RSS reader, except one. That was to share/add the item to your [pocket](https://getpocket.com/ account). And the original author [didn't want to introduce any 3rd party dependencies](https://github.com/nkanaev/yarr/issues/57#issue-864736485) in their version of the application. So I decided to fork it and add that(and maybe a few more) feature to my own fork.
 
 ## Installation
 
