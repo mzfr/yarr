@@ -1,4 +1,4 @@
-VERSION=2.3
+VERSION=1.0
 GITHASH=$(shell git rev-parse --short=8 HEAD)
 
 CGO_ENABLED=1
