@@ -115,12 +115,12 @@ func main() {
 			log.Fatal("Failed to open auth file: ", err)
 		}
 		defer f.Close()
-		username, password, err = parseAuthfile(f)
+		username, password, err = utils.ParseAuthfile(f)
 		if err != nil {
 			log.Fatal("Failed to parse auth file: ", err)
 		}
 	} else if auth != "" {
-		username, password, err = parseAuthfile(strings.NewReader(auth))
+		username, password, err = utils.ParseAuthfile(strings.NewReader(auth))
 		if err != nil {
 			log.Fatal("Failed to parse auth literal: ", err)
 		}

@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func parseAuthfile(authfile io.Reader) (username, password string, err error) {
+func ParseAuthfile(authfile io.Reader) (username, password string, err error) {
 	scanner := bufio.NewScanner(authfile)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -25,7 +25,7 @@ func parseAuthfile(authfile io.Reader) (username, password string, err error) {
 	return username, password, nil
 }
 
-func getPocketAuth() (key, token string, err error) {
+func GetPocketAuth() (key, token string, err error) {
 	var pocketfile string
 	configPath, err := os.UserConfigDir()
 
@@ -37,7 +37,7 @@ func getPocketAuth() (key, token string, err error) {
 	}
 	defer f.Close()
 
-	key, token, err = parseAuthfile(f)
+	key, token, err = ParseAuthfile(f)
 
 	if err != nil {
 		log.Fatal("Failed to parse auth file: ", err)

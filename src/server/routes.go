@@ -511,7 +511,7 @@ func (s *Server) handlePageCrawl(c *router.Context) {
 func (s *Server) addToPocket(c *router.Context) {
 	url := c.Req.URL.Query().Get("url")
 	postUrl := "https://getpocket.com/v3/add"
-	consumer_key, access_token, err := utils.getPocketAuth()
+	consumer_key, access_token, err := utils.GetPocketAuth()
 	postBody := map[string]string{"url": url, "consumer_key": consumer_key, "access_token": access_token}
 	responseBody, _ := json.Marshal(postBody)
 
