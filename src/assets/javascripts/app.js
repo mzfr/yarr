@@ -665,6 +665,8 @@ var vm = new Vue({
         vm.ReplyRetweet = title.replace("R to", "Replying to").split(" ").slice(0, 3).join(" ").slice(0, -1)
       } else if (title.startsWith("RT by")) {
         vm.ReplyRetweet = title.replace("RT by", "Retweeted by").split(" ").slice(0, 3).join(" ").slice(0, -1)
+      } else {
+        vm.ReplyRetweet = null
       }
       return Boolean(vm.ReplyRetweet)
     },
