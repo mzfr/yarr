@@ -322,18 +322,38 @@
         :class="{'font-serif': theme.font == 'serif', 'font-monospace': theme.font == 'monospace'}"
         :style="{'font-size': theme.size + 'rem'}">
         <div class="content-wrapper">
-          <h1><b>{{ itemSelectedDetails.title || 'untitled' }}</b></h1>
-          <div class="text-muted">
-            <div>{{ feedsById[itemSelectedDetails.feed_id].title }}</div>
-            <time>{{ formatDate(itemSelectedDetails.date) }}</time>
+          <div v-if="isNitterLink(itemSelectedDetails.link)">
+            <div class="card bg-dark text-white" style="width: 40rem; margin: 0 auto">
+              <div class="card-header">
+                <h3> @{{ getNitterAuthor(itemSelectedDetails.link) }} </h3>
+                <p class="card-subtitle text-muted" v-if="isReplyRetweet(itemSelectedDetails.title)"> {{ ReplyRetweet }}
+                </p>
+                <time class="card-subtitle mb-3 text-muted">{{ formatDate(itemSelectedDetails.date) }}</time>
+                <a class="toolbar-item" :href="itemSelectedDetails.link" target="_blank" title="tweet Link">
+                  <span class="icon">{% inline "twitter.svg" %}</span>
+                </a>
+              </div>
+              <div class="card-body">
+                <div v-html="itemSelectedContent"></div>
+                <img :src="itemSelectedDetails.image" v-if="itemSelectedDetails.image" class="mb-3">
+              </div>
+            </div>
+
           </div>
-          <hr>
-          <div v-if="!itemSelectedReadability">
-            <img :src="itemSelectedDetails.image" v-if="itemSelectedDetails.image" class="mb-3">
-            <audio class="w-100" controls v-if="itemSelectedDetails.podcast_url"
-              :src="itemSelectedDetails.podcast_url"></audio>
+          <div v-else>
+            <h1><b>{{ itemSelectedDetails.title || 'untitled' }}</b></h1>
+            <div class="text-muted">
+              <div>{{ feedsById[itemSelectedDetails.feed_id].title }}</div>
+              <time>{{ formatDate(itemSelectedDetails.date) }}</time>
+            </div>
+            <hr>
+            <div v-if="!itemSelectedReadability">
+              <img :src="itemSelectedDetails.image" v-if="itemSelectedDetails.image" class="mb-3">
+              <audio class="w-100" controls v-if="itemSelectedDetails.podcast_url"
+                :src="itemSelectedDetails.podcast_url"></audio>
+            </div>
+            <div v-html="itemSelectedContent"></div>
           </div>
-          <div v-html="itemSelectedContent"></div>
         </div>
       </div>
     </div>

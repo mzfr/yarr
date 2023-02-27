@@ -100,7 +100,7 @@ select.form-control:not([multiple]):not([size]) {
 /* custom elements */
 
 .font-serif {
-  font-family: Georgia, serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
 .font-monospace {

@@ -195,11 +195,12 @@ var vm = new Vue({
   data: function() {
     var s = app.settings
     return {
+      'ReplyRetweet': '',
       'filterSelected': s.filter,
       'folders': [],
       'feeds': [],
       'feedSelected': s.feed,
-      'feedListWidth': s.feed_list_width || 300,
+      'feedListWidth': s.feed_list_width || 200,
       'feedNewChoice': [],
       'feedNewChoiceSelected': '',
       'items': [],
@@ -651,6 +652,21 @@ var vm = new Vue({
     },
     incrFont: function(x) {
       this.theme.size = +(this.theme.size + (0.1 * x)).toFixed(1)
+    },
+    isNitterLink: function(url) {
+      return url.includes('nitter')
+    },
+    getNitterAuthor: function(url) {
+      const parseUrl = new URL(url)
+      return parseUrl.pathname.split("/")[1]
+    },
+    isReplyRetweet: function(title) {
+      if (title.startsWith("R to ")) {
+        vm.ReplyRetweet = title.replace("R to", "Replying to").split(" ").slice(0, 3).join(" ").slice(0, -1)
+      } else if (title.startsWith("RT by")) {
+        vm.ReplyRetweet = title.replace("RT by", "Retweeted by").split(" ").slice(0, 3).join(" ").slice(0, -1)
+      }
+      return Boolean(vm.ReplyRetweet)
     },
     fetchAllFeeds: function() {
       if (this.loading.feeds) return
