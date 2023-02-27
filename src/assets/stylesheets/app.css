@@ -255,8 +255,8 @@ select.form-control:not([multiple]):not([size]) {
 }
 
 .toolbar {
-  min-height: 2rem !important;
-  max-height: 2rem !important;
+  min-height: 3rem !important;
+  max-height: 3rem !important;
 }
 
 .toolbar-item {
