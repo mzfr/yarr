@@ -1,12 +1,12 @@
-FROM golang:alpine AS build
+FROM golang:1.19.4-alpine3.16 AS builder
 RUN apk add build-base git
 WORKDIR /src
 COPY . .
 RUN make build_default
 
-FROM alpine:latest
+FROM alpine:3.17
 WORKDIR /home/yarr
-COPY --from=builder /src/_output/linux/yarr .
+COPY --from=builder /src/_output/yarr .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 

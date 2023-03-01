@@ -4,3 +4,4 @@
 *.syso
 versioninfo.rc
 consumer_key
+.secrets
