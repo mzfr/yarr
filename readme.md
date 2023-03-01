@@ -34,7 +34,8 @@ The latest prebuilt binaries for Linux/MacOS/Windows are available
   - Run [the script](etc/install-linux.sh).
 
 * For **self-hosting**, see `yarr -h` for auth, tls & server configuration flags.
-* For building from source code, see [build.md](build.md)
+* For building from source code, see [build.md](doc/build.md)
+* For building with docker, see (docker.md)(doc/docker.md)
 
 ## Enable Pocket Support
 
@@ -65,4 +66,5 @@ I really loved using this RSS reader because this was simple to run and had all 
 
 # Credits
 
-[Feather](http://feathericons.com/) for icons.
+- [Feather](http://feathericons.com/) for icons.
+- The Docker configuration is taken from @Wakeful-Cloud ([their fork](https://github.com/Wakeful-Cloud/yarr))
