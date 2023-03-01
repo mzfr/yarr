@@ -2,6 +2,7 @@ name: DockerRelease
 
 on:
   push:
+    tags: ["v*"]
 
 jobs:
   build_docker:
