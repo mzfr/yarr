@@ -6,7 +6,7 @@ RUN make build_default
 
 FROM alpine:latest
 WORKDIR /home/yarr
-COPY --from=build /src/_output/linux/yarr .
+COPY --from=builder /src/_output/linux/yarr .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 
