@@ -1,12 +1,16 @@
-FROM golang:alpine AS build
+FROM golang:1.19.4-alpine3.16 AS builder
 RUN apk add build-base git
 WORKDIR /src
 COPY . .
-RUN make build_linux
+RUN make build_default
 
-FROM alpine:latest
-RUN apk add --no-cache ca-certificates && \
-    update-ca-certificates
-COPY --from=build /src/_output/linux/yarr /usr/local/bin/yarr
-EXPOSE 7070
-CMD ["/usr/local/bin/yarr", "-addr", "0.0.0.0:7070", "-db", "/data/yarr.db"]
+FROM alpine:3.17
+WORKDIR /home/yarr
+COPY --from=builder /src/_output/yarr .
+COPY entrypoint.sh .
+RUN chmod +x entrypoint.sh
+
+RUN apk add --no-cache ca-certificates su-exec
+RUN update-ca-certificates
+
+CMD ["/home/yarr/entrypoint.sh"]
