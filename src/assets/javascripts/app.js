@@ -184,6 +184,12 @@ Vue.component('relative-time', {
 
 var vm = new Vue({
   created: function() {
+    window.addEventListener('popstate', (event)=>{
+      if(!this.itemSelected) 
+        this.feedSelected = null;
+      else
+        this.itemSelected = null;
+    });
     this.refreshStats()
       .then(this.refreshFeeds.bind(this))
       .then(this.refreshItems.bind(this, false))
@@ -313,12 +319,14 @@ var vm = new Vue({
       this.computeStats()
     },
     'feedSelected': function(newVal, oldVal) {
+      window.history.pushState(null, null);
       if (oldVal === undefined) return  // do nothing, initial setup
       api.settings.update({ feed: newVal }).then(this.refreshItems.bind(this, false))
       this.itemSelected = null
       if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0
     },
     'itemSelected': function(newVal, oldVal) {
+      window.history.pushState(null, null);
       this.itemSelectedReadability = ''
       if (newVal === null) {
         this.itemSelectedDetails = null
@@ -406,6 +414,7 @@ var vm = new Vue({
         .then(function(values) {
           vm.folders = values[0]
           vm.feeds = values[1]
+          window.history.pushState(null, null);
         })
     },
     refreshItems: function(loadMore) {
