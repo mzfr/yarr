@@ -357,7 +357,8 @@ select.form-control:not([multiple]):not([size]) {
 
 .content-wrapper {
   max-width: 60rem;
-  margin: 0 auto;
+  margin-left: 3rem;
+  margin-right: 3rem;
 }
 
 .content img, .content video {
