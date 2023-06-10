@@ -1,12 +1,13 @@
 var TITLE = document.title
 
-var debounce = function(callback, wait) {
-  var timeout
-  return function() {
-    var ctx = this, args = arguments
-    clearTimeout(timeout)
-    timeout = setTimeout(function() {
-      callback.apply(ctx, args)
+const debounce = (callback, wait) => {
+  let timeoutId
+
+  return (...args) => {
+    clearTimeout(timeoutId)
+
+    timeoutId = setTimeout(() => {
+      callback.apply(this, args)
     }, wait)
   }
 }
@@ -67,128 +68,145 @@ var vm = Vue.createApp({
     }
   },
   computed: {
-    foldersWithFeeds: function() {
-      var feedsByFolders = this.feeds.reduce(function(folders, feed) {
-        if (!folders[feed.folder_id])
-          folders[feed.folder_id] = [feed]
-        else
-          folders[feed.folder_id].push(feed)
-        return folders
-      }, {})
-      var folders = this.folders.slice().map(function(folder) {
-        folder.feeds = feedsByFolders[folder.id]
-        return folder
-      })
-      folders.push({ id: null, feeds: feedsByFolders[null] })
-      return folders
+    foldersWithFeeds() {
+      const feedsByFolders = this.feeds.reduce((folders, feed) => {
+        if (!folders[feed.folder_id]) {
+          folders[feed.folder_id] = [feed];
+        } else {
+          folders[feed.folder_id].push(feed);
+        }
+        return folders;
+      }, {});
+      const folders = this.folders.slice().map((folder) => {
+        folder.feeds = feedsByFolders[folder.id];
+        return folder;
+      });
+      folders.push({ id: null, feeds: feedsByFolders[null] });
+      return folders;
     },
-    feedsById: function() {
-      return this.feeds.reduce(function(acc, f) { acc[f.id] = f; return acc }, {})
+    feedsById() {
+      return this.feeds.reduce((acc, f) => {
+        acc[f.id] = f;
+        return acc;
+      }, {});
     },
-    foldersById: function() {
-      return this.folders.reduce(function(acc, f) { acc[f.id] = f; return acc }, {})
+    foldersById() {
+      return this.folders.reduce((acc, f) => {
+        acc[f.id] = f;
+        return acc;
+      }, {});
     },
-    current: function() {
-      var parts = (this.feedSelected || '').split(':', 2)
-      var type = parts[0]
-      var guid = parts[1]
-
-      var folder = {}, feed = {}
-
-      if (type == 'feed')
-        feed = this.feedsById[guid] || {}
-      if (type == 'folder')
-        folder = this.foldersById[guid] || {}
-
-      return { type: type, feed: feed, folder: folder }
+    current() {
+      const parts = (this.feedSelected || '').split(':', 2);
+      const type = parts[0];
+      const guid = parts[1];
+  
+      let folder = {};
+      let feed = {};
+  
+      if (type === 'feed') {
+        feed = this.feedsById[guid] || {};
+      }
+      if (type === 'folder') {
+        folder = this.foldersById[guid] || {};
+      }
+  
+      return { type, feed, folder };
     },
-    itemSelectedContent: function() {
-      if (!this.itemSelected) return ''
-
-      if (this.itemSelectedReadability)
-        return this.itemSelectedReadability
-
-      return this.itemSelectedDetails.content || ''
+    itemSelectedContent() {
+      if (!this.itemSelected) return '';
+  
+      if (this.itemSelectedReadability) {
+        return this.itemSelectedReadability;
+      }
+  
+      return this.itemSelectedDetails?.content || '';
     },
-  },
+  },  
   watch: {
-    'theme': {
+    theme: {
       deep: true,
-      handler: function(theme) {
-        document.body.classList.value = 'theme-' + theme.name
+      handler: (theme) => {
+        document.body.classList.value = 'theme-' + theme.name;
         api.settings.update({
           theme_name: theme.name,
           theme_font: theme.font,
           theme_size: theme.size,
-        })
+        });
       },
     },
-    'feedStats': {
+    feedStats: {
       deep: true,
-      handler: debounce(function() {
-        var title = TITLE
-        var unreadCount = Object.values(this.feedStats).reduce(function(acc, stat) {
-          return acc + stat.unread
-        }, 0)
+      handler: debounce(() => {
+        var title = TITLE;
+        var unreadCount = Object.values(this.feedStats).reduce((acc, stat) => {
+          return acc + stat.unread;
+        }, 0);
         if (unreadCount) {
-          title += ' (' + unreadCount + ')'
+          title += ' (' + unreadCount + ')';
         }
-        document.title = title
-        this.computeStats()
+        document.title = title;
+        this.computeStats();
       }, 500),
     },
-    'filterSelected': function(newVal, oldVal) {
-      if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({ filter: newVal }).then(this.refreshItems.bind(this, false))
-      this.itemSelected = null
-      this.computeStats()
+    filterSelected: function(newVal, oldVal) {
+      if (oldVal === undefined) return; // do nothing, initial setup
+      api.settings.update({ filter: newVal }).then(() => {
+        this.refreshItems(false);
+      });
+      this.itemSelected = null;
+      this.computeStats();
     },
-    'feedSelected': function(newVal, oldVal) {
-      if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({ feed: newVal }).then(this.refreshItems.bind(this, false))
-      this.itemSelected = null
-      if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0
+    feedSelected: function(newVal, oldVal) {
+      if (oldVal === undefined) return; // do nothing, initial setup
+      api.settings.update({ feed: newVal }).then(() => {
+        this.refreshItems(false);
+      });
+      this.itemSelected = null;
+      if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0;
     },
-    'itemSelected': function(newVal, oldVal) {
-      this.itemSelectedReadability = ''
+    itemSelected(newVal, oldVal) {
+      this.itemSelectedReadability = '';
       if (newVal === null) {
-        this.itemSelectedDetails = null
-        return
+        this.itemSelectedDetails = null;
+        return;
       }
-      if (this.$refs.content) this.$refs.content.scrollTop = 0
-
-      api.items.get(newVal).then(function(item) {
-        this.itemSelectedDetails = item
+      if (this.$refs.content) this.$refs.content.scrollTop = 0;
+  
+      api.items.get(newVal).then((item) => {
+        this.itemSelectedDetails = item;
         if (this.itemSelectedDetails.status == 'unread') {
-          api.items.update(this.itemSelectedDetails.id, { status: 'read' }).then(function() {
-            this.feedStats[this.itemSelectedDetails.feed_id].unread -= 1
-            var itemInList = this.items.find(function(i) { return i.id == item.id })
-            if (itemInList) itemInList.status = 'read'
-            this.itemSelectedDetails.status = 'read'
-          }.bind(this))
+          api.items.update(this.itemSelectedDetails.id, { status: 'read' }).then(() => {
+            this.feedStats[this.itemSelectedDetails.feed_id].unread -= 1;
+            var itemInList = this.items.find((i) => i.id == item.id);
+            if (itemInList) itemInList.status = 'read';
+            this.itemSelectedDetails.status = 'read';
+          });
         }
-      }.bind(this))
+      });
     },
-    'itemSearch': debounce(function(newVal) {
-      this.refreshItems()
+    itemSearch: debounce(function(newVal) {
+      this.refreshItems();
     }, 500),
-    'itemSortNewestFirst': function(newVal, oldVal) {
-      if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({ sort_newest_first: newVal }).then(vm.refreshItems.bind(this, false))
+    itemSortNewestFirst: function(newVal, oldVal) {
+      if (oldVal === undefined) return; // do nothing, initial setup
+      api.settings.update({ sort_newest_first: newVal }).then(() => {
+        this.refreshItems(false);
+      });
     },
-    'feedListWidth': debounce(function(newVal, oldVal) {
-      if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({ feed_list_width: newVal })
+    feedListWidth: debounce(function(newVal, oldVal) {
+      if (oldVal === undefined) return; // do nothing, initial setup
+      api.settings.update({ feed_list_width: newVal });
     }, 1000),
-    'itemListWidth': debounce(function(newVal, oldVal) {
-      if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({ item_list_width: newVal })
+    itemListWidth: debounce(function(newVal, oldVal) {
+      if (oldVal === undefined) return; // do nothing, initial setup
+      api.settings.update({ item_list_width: newVal });
     }, 1000),
-    'refreshRate': function(newVal, oldVal) {
-      if (oldVal === undefined) return  // do nothing, initial setup
-      api.settings.update({ refresh_rate: newVal })
+    refreshRate: function(newVal, oldVal) {
+      if (oldVal === undefined) return; // do nothing, initial setup
+      api.settings.update({ refresh_rate: newVal });
     },
-  },
+  },  
   methods: {
     refreshStats(loopMode) {
       return api.status().then((data) => {
