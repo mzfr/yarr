@@ -258,8 +258,10 @@
           <div class="selectgroup-label d-flex flex-column">
             <div style="line-height: 1; opacity: .7; margin-bottom: .1rem;" class="d-flex align-items-center">
               <transition name="indicator">
+                <div>
                 <span class="icon icon-small mr-1" v-if="item.status=='unread'">{% inline "circle-full.svg" %}</span>
                 <span class="icon icon-small mr-1" v-if="item.status=='starred'">{% inline "star-full.svg" %}</span>
+                </div>
               </transition>
               <small class="flex-fill text-truncate mr-1">
                 {{ feedsById[item.feed_id].title }}
@@ -364,7 +366,7 @@
       </button>
       <div v-if="settings=='create'">
         <p class="cursor-default"><b>New Feed</b></p>
-        <form action="" @submit.prevent="createFeed(event)" class="mt-4">
+        <form action="" @submit.prevent="createFeed($event)" class="mt-4">
           <label for="feed-url">URL</label>
           <input id="feed-url" name="url" type="url" class="form-control" required autocomplete="off"
             :readonly="feedNewChoice.length > 0" placeholder="https://example.com/feed" v-focus>
@@ -450,9 +452,8 @@
       </div>
     </modal>
   </div>
-  <!-- external -->
-  <script src="./static/javascripts/vue.min.js"></script>
   <!-- internal -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="./static/javascripts/api.js"></script>
   <script src="./static/javascripts/app.js"></script>
   <script src="./static/javascripts/key.js"></script>
