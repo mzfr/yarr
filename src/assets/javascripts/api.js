@@ -1,114 +1,196 @@
-"use strict";
-
-(function() {
-  var xfetch = function(resource, init) {
-    init = init || {}
-    if (['post', 'put', 'delete'].indexOf(init.method) !== -1) {
-      init['headers'] = init['headers'] || {}
-      init['headers']['x-requested-by'] = 'yarr'
-    }
-    return fetch(resource, init)
+const xfetch = (resource, init) => {
+  init = init || {};
+  if (['post', 'put', 'delete'].indexOf(init.method) !== -1) {
+    init['headers'] = init['headers'] || {};
+    init['headers']['x-requested-by'] = 'yarr';
   }
-  var api = function(method, endpoint, data) {
-    var headers = { 'Content-Type': 'application/json' }
-    return xfetch(endpoint, {
-      method: method,
-      headers: headers,
-      body: JSON.stringify(data),
+  return fetch(resource, init);
+};
+
+const api = (method, endpoint, data) => {
+  const headers = { 'Content-Type': 'application/json' };
+  return xfetch(endpoint, {
+    method: method,
+    headers: headers,
+    body: JSON.stringify(data),
+  });
+};
+
+const json = async (res) => {
+  return await res.json();
+};
+
+const param = (query) => {
+  if (!query) return '';
+  return '?' + Object.keys(query)
+    .map((key) => {
+      return encodeURIComponent(key) + '=' + encodeURIComponent(query[key]);
     })
-  }
+    .join('&');
+};
 
-  var json = function(res) {
-    return res.json()
-  }
+const useFeeds = () => {
+  const list = async () => {
+    const res = await api('get', './api/feeds');
+    return await json(res);
+  };
 
-  var param = function(query) {
-    if (!query) return ''
-    return '?' + Object.keys(query).map(function(key) {
-      return encodeURIComponent(key) + '=' + encodeURIComponent(query[key])
-    }).join('&')
-  }
+  const create = async (data) => {
+    const res = await api('post', './api/feeds', data);
+    return await json(res);
+  };
 
-  window.api = {
-    feeds: {
-      list: function() {
-        return api('get', './api/feeds').then(json)
-      },
-      create: function(data) {
-        return api('post', './api/feeds', data).then(json)
-      },
-      update: function(id, data) {
-        return api('put', './api/feeds/' + id, data)
-      },
-      delete: function(id) {
-        return api('delete', './api/feeds/' + id)
-      },
-      list_items: function(id) {
-        return api('get', './api/feeds/' + id + '/items').then(json)
-      },
-      refresh: function() {
-        return api('post', './api/feeds/refresh')
-      },
-      list_errors: function() {
-        return api('get', './api/feeds/errors').then(json)
-      },
-    },
-    folders: {
-      list: function() {
-        return api('get', './api/folders').then(json)
-      },
-      create: function(data) {
-        return api('post', './api/folders', data).then(json)
-      },
-      update: function(id, data) {
-        return api('put', './api/folders/' + id, data)
-      },
-      delete: function(id) {
-        return api('delete', './api/folders/' + id)
-      },
-      list_items: function(id) {
-        return api('get', './api/folders/' + id + '/items').then(json)
-      }
-    },
-    items: {
-      get: function(id) {
-        return api('get', './api/items/' + id).then(json)
-      },
-      list: function(query) {
-        return api('get', './api/items' + param(query)).then(json)
-      },
-      update: function(id, data) {
-        return api('put', './api/items/' + id, data)
-      },
-      mark_read: function(query) {
-        return api('put', './api/items' + param(query))
-      }
-    },
-    settings: {
-      get: function() {
-        return api('get', './api/settings').then(json)
-      },
-      update: function(data) {
-        return api('put', './api/settings', data)
-      },
-    },
-    status: function() {
-      return api('get', './api/status').then(json)
-    },
-    upload_opml: function(form) {
-      return xfetch('./opml/import', {
-        method: 'post',
-        body: new FormData(form),
-      })
-    },
-    logout: function() {
-      return api('post', './logout')
-    },
-    crawl: function(url) {
-      return api('get', './page?url=' + encodeURIComponent(url)).then(json)
-    },
-    add_to_pocket: function(url) {
-      return api('get', './api/addToPocket?url=' + encodeURIComponent(url))
-    }
-  }
-})()
+  const update = (id, data) => {
+    return api('put', './api/feeds/' + id, data);
+  };
+
+  const remove = (id) => {
+    return api('delete', './api/feeds/' + id);
+  };
+
+  const listItems = async (id) => {
+    const res = await api('get', './api/feeds/' + id + '/items');
+    return await json(res);
+  };
+
+  const refresh = () => {
+    return api('post', './api/feeds/refresh');
+  };
+
+  const listErrors = async () => {
+    const res = await api('get', './api/feeds/errors');
+    return await json(res);
+  };
+
+  return {
+    list,
+    create,
+    update,
+    remove,
+    listItems,
+    refresh,
+    listErrors,
+  };
+};
+
+const useFolders = () => {
+  const list = async () => {
+    const res = await api('get', './api/folders');
+    return await json(res);
+  };
+
+  const create = async (data) => {
+    const res = await api('post', './api/folders', data);
+    return await json(res);
+  };
+
+  const update = (id, data) => {
+    return api('put', './api/folders/' + id, data);
+  };
+
+  const remove = (id) => {
+    return api('delete', './api/folders/' + id);
+  };
+
+  const listItems = async (id) => {
+    const res = await api('get', './api/folders/' + id + '/items');
+    return await json(res);
+  };
+
+  return {
+    list,
+    create,
+    update,
+    remove,
+    listItems,
+  };
+};
+
+const useItems = () => {
+  const get = async (id) => {
+    const res = await api('get', './api/items/' + id);
+    return await json(res);
+  };
+
+  const list = async (query) => {
+    const res = await api('get', './api/items' + param(query));
+    return await json(res);
+  };
+
+  const update = (id, data) => {
+    return api('put', './api/items/' + id, data);
+  };
+
+  const markRead = (query) => {
+    return api('put', './api/items' + param(query));
+  };
+
+  return {
+    get,
+    list,
+    update,
+    markRead,
+  };
+};
+
+const useSettings = () => {
+  const get = async () => {
+    const res = await api('get', './api/settings');
+    return await json(res);
+  };
+
+  const update = (data) => {
+    return api('put', './api/settings', data);
+  };
+
+  return {
+    get,
+    update,
+  };
+};
+
+const useApi = () => {
+  const feeds = useFeeds();
+  const folders = useFolders();
+  const items = useItems();
+  const settings = useSettings();
+
+  const status = async () => {
+    const res = await api('get', './api/status');
+    return await json(res);
+  };
+
+  const uploadOpml = (form) => {
+    return xfetch('./opml/import', {
+      method: 'post',
+      body: new FormData(form),
+    });
+  };
+
+  const logout = () => {
+    return api('post', './logout');
+  };
+
+  const crawl = async (url) => {
+    const res = await api('get', './page?url=' + encodeURIComponent(url));
+    return await json(res);
+  };
+
+  const addToPocket = (url) => {
+    return api('get', './api/addToPocket?url=' + encodeURIComponent(url));
+  };
+
+  return {
+    feeds,
+    folders,
+    items,
+    settings,
+    status,
+    uploadOpml,
+    logout,
+    crawl,
+    addToPocket,
+  };
+};
+
+window.api = useApi;

@@ -1,75 +1,63 @@
-var TITLE = document.title
+const TITLE = document.title;
 
 const debounce = (callback, wait) => {
-  let timeoutId
-
+  let timeout;
   return (...args) => {
-    clearTimeout(timeoutId)
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      callback(...args);
+    }, wait);
+  };
+};
 
-    timeoutId = setTimeout(() => {
-      callback.apply(this, args)
-    }, wait)
-  }
-}
+const app = Vue.createApp({
+  setup() {
+    const filterSelected = Vue.ref("");
+    const folders = Vue.ref([]);
+    const feeds = Vue.ref([]);
+    const feedSelected = Vue.ref("");
+    const feedListWidth = Vue.ref(200);
+    const feedNewChoice = Vue.ref([]);
+    const feedNewChoiceSelected = Vue.ref("");
+    const items = Vue.ref([]);
+    const itemsHasMore = Vue.ref(true);
+    const itemSelected = Vue.ref(null);
+    const itemSelectedDetails = Vue.ref(null);
+    const itemSelectedReadability = Vue.ref("");
+    const itemSearch = Vue.ref("");
+    const itemSortNewestFirst = Vue.ref(false);
+    const itemListWidth = Vue.ref(300);
+    const filteredFeedStats = Vue.ref({});
+    const filteredFolderStats = Vue.ref({});
+    const filteredTotalStats = Vue.ref(null);
+    const settings = Vue.ref("");
+    const loading = Vue.reactive({
+      feeds: 0,
+      newfeed: false,
+      items: false,
+      readability: false,
+    });
+    const fonts = Vue.ref(["", "serif", "monospace"]);
+    const feedStats = Vue.ref({});
+    const theme = Vue.reactive({
+      name: "",
+      font: "",
+      size: "",
+    });
+    const refreshRate = Vue.ref("");
+    const authenticated = Vue.ref(false);
+    const feedErrors = Vue.ref({});
+    const itemList = Vue.ref(null);
+    const newFeedFolderId = Vue.ref(null);
 
+    const api = window.api();
+    Vue.onMounted(() => {
+      refreshFeeds();
+    });
 
-var vm = Vue.createApp({
-  el: "#app",
-  onMounted() {
-    this.refreshStats()
-      .then(this.refreshFeeds.bind(this))
-      .then(this.refreshItems.bind(this, false))
-
-    api.feeds.list_errors().then(function(errors) {
-      vm.feed_errors = errors
-    })
-  },
-  data() {
-    var s = app.settings
-    return {
-      'ReplyRetweet': '',
-      'filterSelected': s.filter,
-      'folders': [],
-      'feeds': [],
-      'feedSelected': s.feed,
-      'feedListWidth': s.feed_list_width || 200,
-      'feedNewChoice': [],
-      'feedNewChoiceSelected': '',
-      'items': [],
-      'itemsHasMore': true,
-      'itemSelected': null,
-      'itemSelectedDetails': null,
-      'itemSelectedReadability': '',
-      'itemSearch': '',
-      'itemSortNewestFirst': s.sort_newest_first,
-      'itemListWidth': s.item_list_width || 300,
-
-      'filteredFeedStats': {},
-      'filteredFolderStats': {},
-      'filteredTotalStats': null,
-
-      'settings': '',
-      'loading': {
-        'feeds': 0,
-        'newfeed': false,
-        'items': false,
-        'readability': false,
-      },
-      'fonts': ['', 'serif', 'monospace'],
-      'feedStats': {},
-      'theme': {
-        'name': s.theme_name,
-        'font': s.theme_font,
-        'size': s.theme_size,
-      },
-      'refreshRate': s.refresh_rate,
-      'authenticated': app.authenticated,
-      'feed_errors': {},
-    }
-  },
-  computed: {
-    foldersWithFeeds() {
-      const feedsByFolders = this.feeds.reduce((folders, feed) => {
+    // Vue.Computed properties
+    const foldersWithFeeds = Vue.computed(() => {
+      const feedsByFolders = feeds.value.reduce((folders, feed) => {
         if (!folders[feed.folder_id]) {
           folders[feed.folder_id] = [feed];
         } else {
@@ -77,666 +65,827 @@ var vm = Vue.createApp({
         }
         return folders;
       }, {});
-      const folders = this.folders.slice().map((folder) => {
+
+      const foldersList = folders.value.slice().map((folder) => {
         folder.feeds = feedsByFolders[folder.id];
         return folder;
       });
-      folders.push({ id: null, feeds: feedsByFolders[null] });
-      return folders;
-    },
-    feedsById() {
-      return this.feeds.reduce((acc, f) => {
+      foldersList.push({ id: null, feeds: feedsByFolders[null] });
+      return foldersList;
+    });
+
+    const feedsById = Vue.computed(() => {
+      return feeds.value.reduce((acc, f) => {
         acc[f.id] = f;
         return acc;
       }, {});
-    },
-    foldersById() {
-      return this.folders.reduce((acc, f) => {
+    });
+
+    const foldersById = Vue.computed(() => {
+      return folders.value.reduce((acc, f) => {
         acc[f.id] = f;
         return acc;
       }, {});
-    },
-    current() {
-      const parts = (this.feedSelected || '').split(':', 2);
+    });
+
+    const current = Vue.computed(() => {
+      const parts = (feedSelected.value || "").split(":", 2);
       const type = parts[0];
       const guid = parts[1];
-  
+
       let folder = {};
       let feed = {};
-  
-      if (type === 'feed') {
-        feed = this.feedsById[guid] || {};
+      if (type === "feed") {
+        feed = feedsById.value[guid] || {};
       }
-      if (type === 'folder') {
-        folder = this.foldersById[guid] || {};
+      if (type === "folder") {
+        folder = foldersById.value[guid] || {};
       }
-  
       return { type, feed, folder };
-    },
-    itemSelectedContent() {
-      if (!this.itemSelected) return '';
-  
-      if (this.itemSelectedReadability) {
-        return this.itemSelectedReadability;
+    });
+
+    const itemSelectedContent = Vue.computed(() => {
+      if (!itemSelected.value) return "";
+
+      if (itemSelectedReadability.value) {
+        return itemSelectedReadability.value;
       }
-  
-      return this.itemSelectedDetails?.content || '';
-    },
-  },  
-  watch: {
-    theme: {
-      deep: true,
-      handler: (theme) => {
-        document.body.classList.value = 'theme-' + theme.name;
+
+      return itemSelectedDetails.value?.content || "";
+    });
+
+    const debouncedHandler = (fn, delay) => {
+      let timeoutId;
+      return (...args) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          fn(...args);
+        }, delay);
+      };
+    };
+
+    // Vue.Watchers
+    Vue.watch(
+      theme,
+      (theme) => {
+        document.body.classList.value = "theme-" + theme.name;
         api.settings.update({
           theme_name: theme.name,
           theme_font: theme.font,
           theme_size: theme.size,
         });
       },
-    },
-    feedStats: {
-      deep: true,
-      handler: debounce(() => {
-        var title = TITLE;
-        var unreadCount = Object.values(this.feedStats).reduce((acc, stat) => {
-          return acc + stat.unread;
-        }, 0);
+      {
+        deep: true,
+      }
+    );
+
+    Vue.watch(
+      feedStats,
+      debouncedHandler(() => {
+        const title = TITLE;
+        const unreadCount = Object.values(feedStats.value).reduce(
+          (acc, stat) => {
+            return acc + stat.unread;
+          },
+          0
+        );
         if (unreadCount) {
-          title += ' (' + unreadCount + ')';
+          document.title = title + " (" + unreadCount + ")";
+        } else {
+          document.title = title;
         }
-        document.title = title;
-        this.computeStats();
+        computeStats();
       }, 500),
-    },
-    filterSelected: function(newVal, oldVal) {
-      if (oldVal === undefined) return; // do nothing, initial setup
-      api.settings.update({ filter: newVal }).then(() => {
-        this.refreshItems(false);
-      });
-      this.itemSelected = null;
-      this.computeStats();
-    },
-    feedSelected: function(newVal, oldVal) {
-      if (oldVal === undefined) return; // do nothing, initial setup
-      api.settings.update({ feed: newVal }).then(() => {
-        this.refreshItems(false);
-      });
-      this.itemSelected = null;
-      if (this.$refs.itemlist) this.$refs.itemlist.scrollTop = 0;
-    },
-    itemSelected(newVal, oldVal) {
-      this.itemSelectedReadability = '';
+      {
+        deep: true,
+      }
+    );
+
+    Vue.watch(filterSelected, (newVal, oldVal) => {
+      if (oldVal !== undefined) {
+        api.settings.update({ filter: newVal }).then(() => {
+          refreshItems(false);
+        });
+        itemSelected.value = null;
+        computeStats();
+      }
+    });
+
+    Vue.watch(feedSelected, (newVal, oldVal) => {
+      if (oldVal !== undefined) {
+        api.settings.update({ feed: newVal }).then(() => {
+          refreshItems(false);
+        });
+        itemSelected.value = null;
+        if (itemList.value) {
+          itemList.value.scrollTop = 0;
+        }
+      }
+    });
+
+    Vue.watch(itemSelected, (newVal, oldVal) => {
+      itemSelectedReadability.value = "";
       if (newVal === null) {
-        this.itemSelectedDetails = null;
+        itemSelectedDetails.value = null;
         return;
       }
-      if (this.$refs.content) this.$refs.content.scrollTop = 0;
-  
+      if ($Vue.refs.content) {
+        $Vue.refs.content.scrollTop = 0;
+      }
       api.items.get(newVal).then((item) => {
-        this.itemSelectedDetails = item;
-        if (this.itemSelectedDetails.status == 'unread') {
-          api.items.update(this.itemSelectedDetails.id, { status: 'read' }).then(() => {
-            this.feedStats[this.itemSelectedDetails.feed_id].unread -= 1;
-            var itemInList = this.items.find((i) => i.id == item.id);
-            if (itemInList) itemInList.status = 'read';
-            this.itemSelectedDetails.status = 'read';
-          });
+        itemSelectedDetails.value = item;
+        if (itemSelectedDetails.value.status === "unread") {
+          api.items
+            .update(itemSelectedDetails.value.id, { status: "read" })
+            .then(() => {
+              feedStats.value[itemSelectedDetails.value.feed_id].unread -= 1;
+              const itemInList = items.value.find((i) => i.id === item.id);
+              if (itemInList) {
+                itemInList.status = "read";
+              }
+              itemSelectedDetails.value.status = "read";
+            });
         }
       });
-    },
-    itemSearch: debounce(function(newVal) {
-      this.refreshItems();
-    }, 500),
-    itemSortNewestFirst: function(newVal, oldVal) {
-      if (oldVal === undefined) return; // do nothing, initial setup
-      api.settings.update({ sort_newest_first: newVal }).then(() => {
-        this.refreshItems(false);
-      });
-    },
-    feedListWidth: debounce(function(newVal, oldVal) {
-      if (oldVal === undefined) return; // do nothing, initial setup
-      api.settings.update({ feed_list_width: newVal });
-    }, 1000),
-    itemListWidth: debounce(function(newVal, oldVal) {
-      if (oldVal === undefined) return; // do nothing, initial setup
-      api.settings.update({ item_list_width: newVal });
-    }, 1000),
-    refreshRate: function(newVal, oldVal) {
-      if (oldVal === undefined) return; // do nothing, initial setup
-      api.settings.update({ refresh_rate: newVal });
-    },
-  },  
-  methods: {
-    refreshStats(loopMode) {
+    });
+
+    Vue.watch(
+      itemSearch,
+      debouncedHandler((newVal) => {
+        refreshItems();
+      }, 500)
+    );
+
+    Vue.watch(itemSortNewestFirst, (newVal, oldVal) => {
+      if (oldVal !== undefined) {
+        api.settings.update({ sort_newest_first: newVal }).then(() => {
+          refreshItems(false);
+        });
+      }
+    });
+
+    Vue.watch(
+      feedListWidth,
+      debouncedHandler((newVal, oldVal) => {
+        if (oldVal !== undefined) return; // do nothing, initial setup
+        api.settings.update({ feed_list_width: newVal });
+      }, 1000)
+    );
+
+    Vue.watch(
+      itemListWidth,
+      debouncedHandler((newVal, oldVal) => {
+        if (oldVal === undefined) return; // do nothing, initial setup
+        api.settings.update({ item_list_width: newVal });
+      }, 1000)
+    );
+
+    // methods
+    const refreshStats = (loopMode) => {
       return api.status().then((data) => {
-        if (loopMode && !this.itemSelected) this.refreshItems()
-    
-        this.loading.feeds = data.running
+        if (loopMode && !itemSelected.value) refreshItems();
+
+        loading.feeds = data.running;
         if (data.running) {
-          setTimeout(() => this.refreshStats(true), 500)
+          setTimeout(() => refreshStats(true), 500);
         }
-        this.feedStats = data.stats.reduce((acc, stat) => {
-          acc[stat.feed_id] = stat
-          return acc
-        }, {})
-    
-        api.feeds.list_errors().then((errors) => {
-          this.feed_errors = errors
-        })
-      })
-    },    
-    getItemsQuery() {
-      var query = {}
-      if (this.feedSelected) {
-        var parts = this.feedSelected.split(':', 2)
-        var type = parts[0]
-        var guid = parts[1]
-        if (type == 'feed') {
-          query.feed_id = guid
-        } else if (type == 'folder') {
-          query.folder_id = guid
+        feedStats.value = data.stats.reduce((acc, stat) => {
+          acc[stat.feed_id] = stat;
+          return acc;
+        }, {});
+
+        api.feeds.listErrors().then((errors) => {
+          feedErrors.value = errors;
+        });
+      });
+    };
+    const getItemsQuery = () => {
+      const query = {};
+      if (feedSelected) {
+        const parts = feedSelected.value.split(":", 2);
+        const type = parts[0];
+        const guid = parts[1];
+        if (type == "feed") {
+          query.feed_id = guid;
+        } else if (type == "folder") {
+          query.folder_id = guid;
         }
       }
-      if (this.filterSelected) {
-        query.status = this.filterSelected
+      if (filterSelected) {
+        query.status = filterSelected;
       }
-      if (this.itemSearch) {
-        query.search = this.itemSearch
+      if (itemSearch) {
+        query.search = itemSearch;
       }
-      if (!this.itemSortNewestFirst) {
-        query.oldest_first = true
+      if (!itemSortNewestFirst) {
+        query.oldest_first = true;
       }
-      return query
-    },
-    async refreshFeeds() {
-      return Promise
-        .all([api.folders.list(), api.feeds.list()])
-        .then(function(values) {
-          vm.folders = values[0]
-          vm.feeds = values[1]
-        })
-    },
-    refreshItems(loadMore) {
-      if (this.feedSelected === null) {
-        this.items = []
-        return
+      return query;
+    };
+    const refreshFeeds = async () => {
+      const values_1 = await Promise.all([
+        api.folders.list(),
+        api.feeds.list(),
+      ]);
+      folders.value = values_1[0];
+      feeds.value = values_1[1];
+    };
+
+    const refreshItems = (loadMore) => {
+      if (feedSelected === null) {
+        items.value = [];
+        return;
       }
-    
-      var query = this.getItemsQuery()
+
+      const query = getItemsQuery();
       if (loadMore) {
-        query.after = this.items[this.items.length - 1].id
+        query.after = items.value[items.value.length - 1].id;
       }
-    
-      this.loading.items = true
+
+      loading.items = true;
       api.items.list(query).then((data) => {
         if (loadMore) {
-          this.items = this.items.concat(data.list)
+          items.value = items.value.concat(data.list);
         } else {
-          this.items = data.list
+          items.value = data.list;
         }
-        this.itemsHasMore = data.has_more
-        this.loading.items = false
-    
-        // load more if there's some space left at the bottom of the item list.
-        this.$nextTick(() => {
-          if (this.itemsHasMore && !this.loading.items && this.itemListCloseToBottom()) {
-            this.refreshItems(true)
-          }
-        })
-      })
-    },    
-    itemListCloseToBottom() {
-      // approx. vertical space at the bottom of the list (loading el & paddings) when 1rem = 16px
-      var bottomSpace = 70
-      var scale = (parseFloat(getComputedStyle(document.documentElement).fontSize) || 16) / 16
+        itemsHasMore.value = data.has_more;
+        loading.items = false;
 
-      var el = this.$refs.itemlist
-      var closeToBottom = (el.scrollHeight - el.scrollTop - el.offsetHeight) < bottomSpace * scale
-      return closeToBottom
-    },
-    loadMoreItems(event, el) {
-      if (!this.itemsHasMore) return
-      if (this.loading.items) return
-      if (this.itemListCloseToBottom()) this.refreshItems(true)
-    },
-    markItemsRead() {
-      var query = this.getItemsQuery()
+        // load more if there's some space left at the bottom of the item list.
+        Vue.nextTick(() => {
+          if (itemsHasMore && !loading.items && itemListCloseToBottom()) {
+            refreshItems(true);
+          }
+        });
+      });
+    };
+
+    const itemListCloseToBottom = () => {
+      // approx. vertical space at the bottom of the list (loading el & paddings) when 1rem = 16px
+      const bottomSpace = 70;
+      const scale =
+        (parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+          16) / 16;
+
+      const el = itemList.value;
+
+      if (!el) return false;
+      const closeToBottom =
+        el.scrollHeight - el.scrollTop - el.offsetHeight < bottomSpace * scale;
+      return closeToBottom;
+    };
+
+    const loadMoreItems = (event, el) => {
+      if (!itemsHasMore) return;
+      if (loading.items) return;
+      if (itemListCloseToBottom()) refreshItems(true);
+    };
+    const markItemsRead = () => {
+      const query = getItemsQuery();
       api.items.mark_read(query).then(() => {
-        this.items = []
-        this.itemsPage = { 'cur': 1, 'num': 1 }
-        this.itemSelected = null
-        this.itemsHasMore = false
-        this.refreshStats()
-      })
-    },
-    toggleFolderExpanded(folder) {
-      folder.is_expanded = !folder.is_expanded
-      api.folders.update(folder.id, { is_expanded: folder.is_expanded })
-    },
-    formatDate(datestr) {
-      var options = {
-        year: "numeric", month: "long", day: "numeric",
-        hour: '2-digit', minute: '2-digit',
-      }
-      return new Date(datestr).toLocaleDateString(undefined, options)
-    },
-    moveFeed(feed, folder) {
-      var folder_id = folder ? folder.id : null
+        items.value = [];
+        itemsPage.value = { cur: 1, num: 1 };
+        itemSelected.value = null;
+        itemsHasMore.value = false;
+        refreshStats();
+      });
+    };
+
+    const toggleFolderExpanded = (folder) => {
+      folder.is_expanded = !folder.is_expanded;
+      api.folders.update(folder.id, { is_expanded: folder.is_expanded });
+    };
+
+    const formatDate = (datestr) => {
+      const options = {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      };
+      return new Date(datestr).toLocaleDateString(undefined, options);
+    };
+
+    const moveFeed = (feed, folder) => {
+      const folder_id = folder ? folder.id : null;
       api.feeds.update(feed.id, { folder_id: folder_id }).then(() => {
-        feed.folder_id = folder_id
-        this.refreshStats()
-      })
-    },
-    moveFeedToNewFolder(feed) {
-      var title = prompt('Enter folder name:')
-      if (!title) return
-      api.folders.create({ 'title': title }).then((folder) => {
+        feed.folder_id = folder_id;
+        refreshStats();
+      });
+    };
+
+    const moveFeedToNewFolder = (feed) => {
+      const title = prompt("Enter folder name:");
+      if (!title) return;
+      api.folders.create({ title: title }).then((folder) => {
         api.feeds.update(feed.id, { folder_id: folder.id }).then(() => {
-          this.refreshFeeds().then(() => {
-            this.refreshStats()
-          })
-        })
-      })
-    },
-    createNewFeedFolder() {
-      var title = prompt('Enter folder name:')
-      if (!title) return
-      api.folders.create({ 'title': title }).then((result) => {
-        this.refreshFeeds().then(() => {
-          this.$nextTick(() => {
-            if (this.$refs.newFeedFolder) {
-              this.$refs.newFeedFolder.value = result.id
+          refreshFeeds().then(() => {
+            refreshStats();
+          });
+        });
+      });
+    };
+
+    const createNewFeedFolder = () => {
+      const title = prompt("Enter folder name:");
+      if (!title) return;
+      api.folders.create({ title: title }).then((result) => {
+        refreshFeeds().then(() => {
+          Vue.nextTick(() => {
+            if (newFeedFolderId.value) {
+              newFeedFolderId.value = result.id;
             }
-          })
-        })
-      })
-    },    
-    renameFolder(folder) {
-      let newTitle = prompt('Enter new title', folder.title)
+          });
+        });
+      });
+    };
+
+    const renameFolder = (folder) => {
+      const newTitle = prompt("Enter new title", folder.title);
       if (newTitle) {
         api.folders.update(folder.id, { title: newTitle }).then(() => {
-          folder.title = newTitle
-          this.folders.sort((a, b) => a.title.localeCompare(b.title))
-        })
+          folder.title = newTitle;
+          folders.value.sort((a, b) => a.title.localeCompare(b.title));
+        });
       }
-    },    
-    deleteFolder(folder) {
-      if (confirm('Are you sure you want to delete ' + folder.title + '?')) {
+    };
+
+    const deleteFolder = (folder) => {
+      if (confirm("Are you sure you want to delete " + folder.title + "?")) {
         api.folders.delete(folder.id).then(() => {
-          if (this.feedSelected === 'folder:' + folder.id) {
-            this.items = []
-            this.feedSelected = ''
+          if (feedSelected === "folder:" + folder.id) {
+            items.value = [];
+            feedSelected = "";
           }
-          this.refreshStats()
-          this.refreshFeeds()
-        })
+          refreshStats();
+          refreshFeeds();
+        });
       }
-    },
-    renameFeed(feed) {
-      var newTitle = prompt('Enter new title', feed.title)
-      if (newTitle) {
-        api.feeds.update(feed.id, { title: newTitle }).then(() => {
-          feed.title = newTitle
-        })
+    };
+
+    function renameFeed(feed) {
+      const newTitle = Vue.ref(prompt("Enter new title", feed.title));
+      if (newTitle.value) {
+        api.feeds.update(feed.id, { title: newTitle.value }).then(() => {
+          feed.title = newTitle.value;
+        });
       }
-    },
-    deleteFeed(feed) {
-      if (confirm('Are you sure you want to delete ' + feed.title + '?')) {
+    }
+
+    const deleteFeed = (feed) => {
+      if (confirm("Are you sure you want to delete " + feed.title + "?")) {
         api.feeds.delete(feed.id).then(() => {
-          // unselect feed to prevent reading properties of null in template
-          var isSelected = !vm.feedSelected
-            || (vm.feedSelected === 'feed:' + feed.id
-              || (feed.folder_id && vm.feedSelected === 'folder:' + feed.folder_id));
-          if (isSelected) vm.feedSelected = null
+          const isSelected =
+            !feedSelected ||
+            feedSelected === "feed:" + feed.id ||
+            (feed.folder_id && feedSelected === "folder:" + feed.folder_id);
+          if (isSelected) feedSelected = null;
 
-          this.refreshStats()
-          this.refreshFeeds()
-        })
+          refreshStats();
+          refreshFeeds();
+        });
       }
-    },
-    createFeed(event) {
-      var form = event.target
-      var data = {
-        url: form.querySelector('input[name=url]').value,
-        folder_id: parseInt(form.querySelector('select[name=folder_id]').value) || null,
+    };
+
+    function createFeed(event) {
+      const form = event.target;
+      const data = {
+        url: form.querySelector("input[name=url]").value,
+        folder_id: parseInt(form.querySelector("select[name=folder_id]").value) || null,
+      };
+      if (feedNewChoiceSelected.value) {
+        data.url = feedNewChoiceSelected.value;
       }
-      if (this.feedNewChoiceSelected) {
-        data.url = this.feedNewChoiceSelected
-      }
-      this.loading.newfeed = true
+      loading.newfeed = true;
       api.feeds.create(data).then((result) => {
-        if (result.status === 'success') {
-          this.refreshFeeds()
-          this.refreshStats()
-          this.settings = ''
-          this.feedSelected = 'feed:' + result.feed.id
-        } else if (result.status === 'multiple') {
-          this.feedNewChoice = result.choice
-          this.feedNewChoiceSelected = result.choice[0].url
+        if (result.status === "success") {
+          refreshFeeds();
+          refreshStats();
+          settings.value = "";
+          feedSelected.value = "feed:" + result.feed.id;
+        } else if (result.status === "multiple") {
+          feedNewChoice.value = result.choice;
+          feedNewChoiceSelected.value = result.choice[0].url;
         } else {
-          alert('No feeds found at the given url.')
+          alert("No feeds found at the given URL.");
         }
-        this.loading.newfeed = false
-      })
-    },
-    toggleItemStatus(item, targetstatus, fallbackstatus) {
-      let oldstatus = item.status
-      let newstatus = item.status !== targetstatus ? targetstatus : fallbackstatus
-    
+        loading.newfeed = false;
+      });
+    }
+
+    const toggleItemStatus = (item, targetStatus, fallbackStatus) => {
+      const oldStatus = item.status;
+      const newStatus =
+        item.status !== targetStatus ? targetStatus : fallbackStatus;
+
       const updateStats = (status, incr) => {
-        if (status === 'unread' || status === 'starred') {
-          this.feedStats[item.feed_id][status] += incr
+        if (status === "unread" || status === "starred") {
+          feedStats[item.feed_id][status] += incr;
         }
-      }
-    
-      api.items.update(item.id, { status: newstatus }).then(() => {
-        updateStats(oldstatus, -1)
-        updateStats(newstatus, +1)
-    
-        let itemInList = this.items.find((i) => i.id === item.id)
-        if (itemInList) itemInList.status = newstatus
-        item.status = newstatus
-      })
-    },
-    
-    toggleItemStarred(item) {
-      this.toggleItemStatus(item, 'starred', 'read')
-    },
-    
-    toggleItemRead(item) {
-      this.toggleItemStatus(item, 'unread', 'read')
-    },
-    
-    addToPocket(item) {
-      console.log("WORKING!")
-      api.add_to_pocket(item.link)
-    },
-    
-    importOPML(event) {
-      let input = event.target
-      let form = document.querySelector('#opml-import-form')
-      this.$refs.menuDropdown.hide()
+      };
+
+      api.items.update(item.id, { status: newStatus }).then(() => {
+        updateStats(oldStatus, -1);
+        updateStats(newStatus, 1);
+
+        const itemInList = items.value.find((i) => i.id === item.id);
+        if (itemInList) itemInList.status = newStatus;
+        item.status = newStatus;
+      });
+    };
+
+    const toggleItemStarred = (item) => {
+      toggleItemStatus(item, "starred", "read");
+    };
+
+    const toggleItemRead = (item) => {
+      toggleItemStatus(item, "unread", "read");
+    };
+
+    const addToPocket = (item) => {
+      console.log("WORKING!");
+      api.add_to_pocket(item.link);
+    };
+
+    const importOPML = (event) => {
+      const input = event.target;
+      const form = document.querySelector("#opml-import-form");
+      $refs.menuDropdown.hide();
       api.upload_opml(form).then(() => {
-        input.value = ''
-        this.refreshFeeds()
-        this.refreshStats()
-      })
-    },
-    
-    logout() {
+        input.value = "";
+        refreshFeeds();
+        refreshStats();
+      });
+    };
+
+    const logout = () => {
       api.logout().then(() => {
-        document.location.reload()
-      })
-    },
-    
-    toggleReadability() {
-      if (this.itemSelectedReadability) {
-        this.itemSelectedReadability = null
-        return
+        document.location.reload();
+      });
+    };
+
+    const toggleReadability = () => {
+      if (itemSelectedReadability.value) {
+        itemSelectedReadability.value = null;
+        return;
       }
-      let item = this.itemSelectedDetails
-      if (!item) return
+      const item = itemSelectedDetails.value;
+      if (!item) return;
       if (item.link) {
-        this.loading.readability = true
+        loading.readability = true;
         api.crawl(item.link).then((data) => {
-          this.itemSelectedReadability = data && data.content
-          this.loading.readability = false
-        })
+          itemSelectedReadability.value = data && data.content;
+          loading.readability = false;
+        });
       }
-    },
-    
-    showSettings(settings) {
-      this.settings = settings
-    
-      if (settings === 'create') {
-        this.feedNewChoice = []
-        this.feedNewChoiceSelected = ''
+    };
+
+    function showSettings(settingsOption) {
+      settings.value = settingsOption;
+
+      if (settingsOption === "create") {
+        feedNewChoice.value = [];
+        feedNewChoiceSelected.value = "";
       }
-    },
-    
-    resizeFeedList(width) {
-      this.feedListWidth = Math.min(Math.max(200, width), 700)
-    },
-    
-    resizeItemList(width) {
-      this.itemListWidth = Math.min(Math.max(200, width), 700)
-    },
-    
-    resetFeedChoice() {
-      this.feedNewChoice = []
-      this.feedNewChoiceSelected = ''
-    },
-    
-    incrFont(x) {
-      this.theme.size = +(this.theme.size + 0.1 * x).toFixed(1)
-    },
-    
-    isNitterLink(url) {
-      return url.includes('nitter')
-    },
-    
-    getNitterAuthor(url) {
-      const parseUrl = new URL(url)
-      return parseUrl.pathname.split("/")[1]
-    },
-    
-    isReplyRetweet(title) {
+    }
+
+    const resizeFeedList = (width) => {
+      feedListWidth.value = Math.min(Math.max(200, width), 700);
+    };
+
+    const resizeItemList = (width) => {
+      itemListWidth.value = Math.min(Math.max(200, width), 700);
+    };
+
+    const resetFeedChoice = () => {
+      feedNewChoice.value = [];
+      feedNewChoiceSelected.value = "";
+    };
+
+    const incrFont = (x) => {
+      theme.size = +(theme.size + 0.1 * x).toFixed(1);
+    };
+
+    const isNitterLink = (url) => {
+      return url.includes("nitter");
+    };
+
+    const getNitterAuthor = (url) => {
+      const parseUrl = new URL(url);
+      return parseUrl.pathname.split("/")[1];
+    };
+
+    const isReplyRetweet = (title) => {
       if (title.startsWith("R to ")) {
-        this.ReplyRetweet = title.replace("R to", "Replying to").split(" ").slice(0, 3).join(" ").slice(0, -1)
+        ReplyRetweet.value = title
+          .replace("R to", "Replying to")
+          .split(" ")
+          .slice(0, 3)
+          .join(" ")
+          .slice(0, -1);
       } else if (title.startsWith("RT by")) {
-        this.ReplyRetweet = title.replace("RT by", "Retweeted by").split(" ").slice(0, 3).join(" ").slice(0, -1)
+        ReplyRetweet.value = title
+          .replace("RT by", "Retweeted by")
+          .split(" ")
+          .slice(0, 3)
+          .join(" ")
+          .slice(0, -1);
       } else {
-        this.ReplyRetweet = null
+        ReplyRetweet.value = null;
       }
-      return Boolean(this.ReplyRetweet)
-    },
+      return Boolean(ReplyRetweet.value);
+    };
 
-    fetchAllFeeds() {
-      if (this.loading.feeds) return
+    const fetchAllFeeds = () => {
+      if (loading.feeds) return;
       api.feeds.refresh().then(() => {
-        this.refreshStats()
-      })
-    },
-    computeStats() {
-      let filter = this.filterSelected
+        refreshStats();
+      });
+    };
+
+    const computeStats = () => {
+      const filter = filterSelected.value;
       if (!filter) {
-        this.filteredFeedStats = {}
-        this.filteredFolderStats = {}
-        this.filteredTotalStats = null
-        return
+        filteredFeedStats.value = {};
+        filteredFolderStats.value = {};
+        filteredTotalStats.value = null;
+        return;
       }
-    
-      let statsFeeds = {}
-      let statsFolders = {}
-      let statsTotal = 0
-    
-      for (let [id, folder_id] of Object.entries(this.feeds)) {
-        if (!this.feedStats[id]) continue
-    
-        let n = this.feedStats[id][filter] ?? 0
-    
-        if (!statsFolders[folder_id]) this.$set(statsFolders, folder_id, 0)
-    
-        this.$set(statsFeeds, id, n)
-        statsFolders[folder_id] += n
-        statsTotal += n
-      }
-    
-      this.filteredFeedStats = statsFeeds
-      this.filteredFolderStats = statsFolders
-      this.filteredTotalStats = statsTotal
-    },
-  } 
-})
 
-vm.directive('scroll', {
-  inserted: function(el, binding) {
-    el.addEventListener('scroll', debounce(function(event) {
-      binding.value(event, el)
-    }, 200))
+      const statsFeeds = {};
+      const statsFolders = {};
+      let statsTotal = 0;
+
+      for (const [id, folder_id] of Object.entries(feeds)) {
+        if (!feedStats[id]) continue;
+
+        const n = feedStats[id][filter] ?? 0;
+
+        if (!statsFolders[folder_id]) {
+          statsFolders[folder_id] = 0;
+        }
+
+        statsFeeds[id] = n;
+        statsFolders[folder_id] += n;
+        statsTotal += n;
+      }
+
+      filteredFeedStats.value = statsFeeds;
+      filteredFolderStats.value = statsFolders;
+      filteredTotalStats.value = statsTotal;
+    };
+
+    return {
+      filterSelected,
+      folders,
+      feeds,
+      feedSelected,
+      feedListWidth,
+      feedNewChoice,
+      feedNewChoiceSelected,
+      items,
+      itemsHasMore,
+      itemSelected,
+      itemSelectedDetails,
+      itemSelectedReadability,
+      itemSearch,
+      itemSortNewestFirst,
+      itemListWidth,
+      filteredFeedStats,
+      filteredFolderStats,
+      filteredTotalStats,
+      settings,
+      loading,
+      fonts,
+      feedStats,
+      theme,
+      refreshRate,
+      showSettings,
+      authenticated,
+      feedErrors,
+      foldersWithFeeds,
+      feedsById,
+      foldersById,
+      current,
+      itemSelectedContent,
+      refreshItems,
+      refreshStats,
+      refreshFeeds,
+      resizeFeedList,
+      resizeItemList,
+      resetFeedChoice,
+      incrFont,
+      getNitterAuthor,
+      isNitterLink,
+      isReplyRetweet,
+      fetchAllFeeds,
+      toggleReadability,
+      logout,
+      importOPML,
+      addToPocket,
+      toggleItemRead,
+      toggleItemStarred,
+      createFeed,
+      loadMoreItems,
+      markItemsRead,
+      toggleFolderExpanded,
+      formatDate,
+      createNewFeedFolder,
+      newFeedFolderId,
+      renameFeed,
+      renameFolder,
+      deleteFeed
+    };
   },
-})
+});
 
-vm.directive('focus', {
-  inserted: function(el) {
-    el.focus()
-  }
-})
+// Additional Directives and Components
+app.directive("scroll", {
+  inserted: function (el, binding) {
+    el.addEventListener(
+      "scroll",
+      debounce(function (event) {
+        binding.value(event, el);
+      }, 200)
+    );
+  },
+});
 
-vm.component('drag', {
-  props: ['width'],
+app.directive("focus", {
+  inserted: function (el) {
+    el.focus();
+  },
+});
+
+app.component("drag", {
+  props: ["width"],
   template: '<div class="drag"></div>',
-  mounted: function() {
-    var self = this
-    var startX = undefined
-    var initW = undefined
-    var onMouseMove = function(e) {
-      var offset = e.clientX - startX
-      var newWidth = initW + offset
-      self.$emit('resize', newWidth)
-    }
-    var onMouseUp = function(e) {
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
-    }
-    this.$el.addEventListener('mousedown', function(e) {
-      startX = e.clientX
-      initW = self.width
-      document.addEventListener('mousemove', onMouseMove)
-      document.addEventListener('mouseup', onMouseUp)
-    })
+  mounted: function () {
+    var self = this;
+    var startX = undefined;
+    var initW = undefined;
+    var onMouseMove = function (e) {
+      var offset = e.clientX - startX;
+      var newWidth = initW + offset;
+      self.$emit("resize", newWidth);
+    };
+    var onMouseUp = function (e) {
+      document.removeEventListener("mousemove", onMouseMove);
+      document.removeEventListener("mouseup", onMouseUp);
+    };
+    this.$el.addEventListener("mousedown", function (e) {
+      startX = e.clientX;
+      initW = self.width;
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
   },
-})
+});
 
-vm.component('dropdown', {
-  props: ['class', 'toggle-class', 'ref', 'drop', 'title'],
-  data: function() {
-    return { open: false }
+app.component("dropdown", {
+  props: ["class", "toggle-class", "ref", "drop", "title"],
+  data: function () {
+    return { open: false };
   },
   template: `
-    <div class="dropdown" :class="$attrs.class">
-      <button ref="btn" @click="toggle" :class="btnToggleClass" :title="$props.title"><slot name="button"></slot></button>
-      <div ref="menu" class="dropdown-menu" :class="{show: open}"><slot v-if="open"></slot></div>
-    </div>
-  `,
+      <div class="dropdown" :class="$attrs.class">
+        <button ref="btn" @click="toggle" :class="btnToggleClass" :title="$props.title"><slot name="button"></slot></button>
+        <div ref="menu" class="dropdown-menu" :class="{show: open}"><slot v-if="open"></slot></div>
+      </div>
+    `,
   computed: {
-    btnToggleClass: function() {
-      var c = this.$props.toggleClass || ''
-      c += ' dropdown-toggle dropdown-toggle-no-caret'
-      c += this.open ? ' show' : ''
-      return c.trim()
-    }
+    btnToggleClass: function () {
+      var c = this.$props.toggleClass || "";
+      c += " dropdown-toggle dropdown-toggle-no-caret";
+      c += this.open ? " show" : "";
+      return c.trim();
+    },
   },
   methods: {
-    toggle: function(e) {
-      this.open ? this.hide() : this.show()
+    toggle: function (e) {
+      this.open ? this.hide() : this.show();
     },
-    show: function(e) {
-      this.open = true
-      this.$refs.menu.style.top = this.$refs.btn.offsetHeight + 'px'
-      var drop = this.$props.drop
+    show: function (e) {
+      this.open = true;
+      this.$refs.menu.style.top = this.$refs.btn.offsetHeight + "px";
+      var drop = this.$props.drop;
 
-      if (drop === 'right') {
-        this.$refs.menu.style.left = 'auto'
-        this.$refs.menu.style.right = '0'
-      } else if (drop === 'center') {
-        this.$nextTick(function() {
-          var btnWidth = this.$refs.btn.getBoundingClientRect().width
-          var menuWidth = this.$refs.menu.getBoundingClientRect().width
-          this.$refs.menu.style.left = '-' + ((menuWidth - btnWidth) / 2) + 'px'
-        }.bind(this))
+      if (drop === "right") {
+        this.$refs.menu.style.left = "auto";
+        this.$refs.menu.style.right = "0";
+      } else if (drop === "center") {
+        this.$nextTick(
+          function () {
+            var btnWidth = this.$refs.btn.getBoundingClientRect().width;
+            var menuWidth = this.$refs.menu.getBoundingClientRect().width;
+            this.$refs.menu.style.left =
+              "-" + (menuWidth - btnWidth) / 2 + "px";
+          }.bind(this)
+        );
       }
 
-      document.addEventListener('click', this.clickHandler)
+      document.addEventListener("click", this.clickHandler);
     },
-    hide: function() {
-      this.open = false
-      document.removeEventListener('click', this.clickHandler)
+    hide: function () {
+      this.open = false;
+      document.removeEventListener("click", this.clickHandler);
     },
-    clickHandler: function(e) {
-      var dropdown = e.target.closest('.dropdown')
-      if (dropdown == null || dropdown != this.$el) return this.hide()
-      if (e.target.closest('.dropdown-item') != null) return this.hide()
-    }
+    clickHandler: function (e) {
+      var dropdown = e.target.closest(".dropdown");
+      if (dropdown == null || dropdown != this.$el) return this.hide();
+      if (e.target.closest(".dropdown-item") != null) return this.hide();
+    },
   },
-})
+});
 
-vm.component('modal', {
-  props: ['open'],
+app.component("modal", {
+  props: ["open"],
   template: `
-    <div class="modal custom-modal" tabindex="-1" v-if="$props.open">
-      <div class="modal-dialog">
-        <div class="modal-content" ref="content">
-          <div class="modal-body">
-            <slot v-if="$props.open"></slot>
+      <div class="modal custom-modal" tabindex="-1" v-if="$props.open">
+        <div class="modal-dialog">
+          <div class="modal-content" ref="content">
+            <div class="modal-body">
+              <slot v-if="$props.open"></slot>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  `,
-  data: function() {
-    return { opening: false }
+    `,
+  data: function () {
+    return { opening: false };
   },
   watch: {
-    'open': function(newVal) {
+    open: function (newVal) {
       if (newVal) {
-        this.opening = true
-        document.addEventListener('click', this.handleClick)
+        this.opening = true;
+        document.addEventListener("click", this.handleClick);
       } else {
-        document.removeEventListener('click', this.handleClick)
+        document.removeEventListener("click", this.handleClick);
       }
     },
   },
   methods: {
-    handleClick: function(e) {
+    handleClick: function (e) {
       if (this.opening) {
-        this.opening = false
-        return
+        this.opening = false;
+        return;
       }
-      if (e.target.closest('.modal-content') == null) this.$emit('hide')
+      if (e.target.closest(".modal-content") == null) this.$emit("hide");
     },
   },
-})
+});
 
 function dateRepr(d) {
-  var sec = (new Date().getTime() - d.getTime()) / 1000
-  var neg = sec < 0
-  var out = ''
+  var sec = (new Date().getTime() - d.getTime()) / 1000;
+  var neg = sec < 0;
+  var out = "";
 
-  sec = Math.abs(sec)
-  if (sec < 2700)  // less than 45 minutes
-    out = Math.round(sec / 60) + 'm'
-  else if (sec < 86400)  // less than 24 hours
-    out = Math.round(sec / 3600) + 'h'
-  else if (sec < 604800)  // less than a week
-    out = Math.round(sec / 86400) + 'd'
+  sec = Math.abs(sec);
+  if (sec < 2700)
+    // less than 45 minutes
+    out = Math.round(sec / 60) + "m";
+  else if (sec < 86400)
+    // less than 24 hours
+    out = Math.round(sec / 3600) + "h";
+  else if (sec < 604800)
+    // less than a week
+    out = Math.round(sec / 86400) + "d";
   else
-    out = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })
+    out = d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
-  if (neg) return '-' + out
-  return out
+  if (neg) return "-" + out;
+  return out;
 }
 
-vm.component('relative-time', {
-  props: ['val'],
-  data: function() {
-    var d = new Date(this.val)
+app.component("relative-time", {
+  props: ["val"],
+  data: function () {
+    var d = new Date(this.val);
     return {
-      'date': d,
-      'formatted': dateRepr(d),
-      'interval': null,
-    }
+      date: d,
+      formatted: dateRepr(d),
+      interval: null,
+    };
   },
   template: '<time :datetime="val">{{ formatted }}</time>',
-  mounted: function() {
-    this.interval = setInterval(function() {
-      this.formatted = dateRepr(this.date)
-    }.bind(this), 600000)  // every 10 minutes
+  mounted: function () {
+    this.interval = setInterval(
+      function () {
+        this.formatted = dateRepr(this.date);
+      }.bind(this),
+      600000
+    ); // every 10 minutes
   },
-  destroyed: function() {
-    clearInterval(this.interval)
+  destroyed: function () {
+    clearInterval(this.interval);
   },
-})
+});
 
-vm.mount('#app')
+app.mount("#app");
