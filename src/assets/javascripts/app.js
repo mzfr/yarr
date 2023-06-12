@@ -54,9 +54,14 @@ const app = Vue.createApp({
     const content = Vue.ref(null);
 
     const api = window.api();
-    Vue.onMounted(() => {
-      refreshFeeds();
-      refreshItems();
+
+    Vue.onMounted(async () => {
+      await refreshStats();
+      await refreshFeeds();
+      refreshItems(false);
+      api.feeds.listErrors().then((errors) => {
+        feedErrors.value = errors;
+      });
     });
 
     // Vue.Computed properties
@@ -254,7 +259,9 @@ const app = Vue.createApp({
     // methods
     function refreshStats(loopMode) {
       return api.status().then((data) => {
-        if (loopMode && !itemSelected.value) refreshItems();
+        if (loopMode && !itemSelected.value) {
+          refreshFeeds();
+        }
 
         loading.feeds = data.running;
         if (data.running) {
@@ -306,6 +313,7 @@ const app = Vue.createApp({
         items.value = [];
         return;
       }
+      console.log(filteredFeedStats);
 
       const query = getItemsQuery();
       if (loadMore) {
@@ -331,15 +339,14 @@ const app = Vue.createApp({
       });
     }
 
-    function itemListCloseToBottom(el) {
+    function itemListCloseToBottom() {
       // approx. vertical space at the bottom of the list (loading el & paddings) when 1rem = 16px
       const bottomSpace = 70;
       const scale =
         (parseFloat(getComputedStyle(document.documentElement).fontSize) ||
           16) / 16;
 
-      // const el = itemList.value;
-      console.log(el);
+      const el = itemList.value;
       if (!el) return false;
       const closeToBottom =
         el.scrollHeight - el.scrollTop - el.offsetHeight < bottomSpace * scale;
@@ -349,7 +356,7 @@ const app = Vue.createApp({
     function loadMoreItems(event, el) {
       if (!itemsHasMore) return;
       if (loading.items) return;
-      if (itemListCloseToBottom(el)) refreshItems(true);
+      if (itemListCloseToBottom()) refreshItems(true);
     }
     const markItemsRead = () => {
       const query = getItemsQuery();
@@ -627,7 +634,6 @@ const app = Vue.createApp({
       const statsFeeds = {};
       const statsFolders = {};
       let statsTotal = 0;
-
       for (const [id, folder_id] of Object.entries(feeds)) {
         if (!feedStats[id]) continue;
 
