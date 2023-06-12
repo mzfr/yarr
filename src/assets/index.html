@@ -31,7 +31,7 @@
     <div
       id="app"
       class="d-flex"
-      :class="{'feed-selected': feedSelected !== null, 'item-selected': itemSelected !== null}"
+      :class="{'feed-selected': feedSelected.value !== null, 'item-selected': itemSelected !== null}"
       v-cloak
     >
       <!-- feed list -->
@@ -334,7 +334,9 @@
           >
         </div>
       </div>
+
       <!-- item list -->
+      <!-- This is the starting of the first column after all the settings options -->
       <div
         id="col-item-list"
         class="vh-100 position-relative d-flex flex-column border-right flex-shrink-0"
@@ -530,12 +532,15 @@
           {{ feedErrors[current.feed.id] }}
         </div>
       </div>
+
       <!-- item show -->
+      <!-- This is the begining of 2nd column -->
       <div
         id="col-item"
         class="vh-100 d-flex flex-column w-100"
         style="min-width: 0"
       >
+        <!-- Starting of column 2 toolbar -->
         <div
           class="toolbar px-2 d-flex align-items-center"
           v-if="itemSelectedDetails"
@@ -647,70 +652,79 @@
             <span class="icon">{% inline "x.svg" %}</span>
           </button>
         </div>
-        <div
-          v-if="itemSelectedDetails"
-          :ref="content"
-          class="content px-4 pt-3 pb-5 border-top overflow-auto"
-          :class="{'font-serif': theme.font === 'serif', 'font-monospace': theme.font === 'monospace'}"
-          :style="{'font-size': theme.size + 'rem'}"
-        >
-          <div class="content-wrapper">
-            <div v-if="isNitterLink(itemSelectedDetails.link)">
-              <div
-                class="card bg-dark text-white"
-                style="width: 40rem; margin: 0 auto"
-              >
-                <div class="card-header">
-                  <h3>{{ getNitterAuthor(itemSelectedDetails.link) }}</h3>
-                  <p
-                    class="card-subtitle text-muted"
-                    v-if="isReplyRetweet(itemSelectedDetails.title)"
-                  >
-                    {{ ReplyRetweet }}
-                  </p>
-                  <time class="card-subtitle mb-3 text-muted"
-                    >{{ formatDate(itemSelectedDetails.date) }}</time
-                  >
-                  <a
-                    class="toolbar-item"
-                    :href="itemSelectedDetails.link"
-                    target="_blank"
-                    title="tweet Link"
-                  >
-                    <span class="icon">{% inline "twitter.svg" %}</span>
-                  </a>
+        <!-- Ending of Column 2 toolbar -->
+
+        <!-- Starting of the feed logic -->
+        <div v-if="itemSelectedDetails">
+          <div
+            :ref="content"
+            class="content px-4 pt-3 pb-5 border-top overflow-auto"
+            :class="{'font-serif': theme.font === 'serif', 'font-monospace': theme.font === 'monospace'}"
+            :style="{'font-size': theme.size + 'rem'}"
+          >
+            <div class="content-wrapper">
+              <!-- If the feed we reading is coming from nitter -->
+              <div v-if="isNitterLink(itemSelectedDetails.link)">
+                <div
+                  class="card bg-dark text-white"
+                  style="width: 40rem; margin: 0 auto"
+                >
+                  <div class="card-header">
+                    <h3>{{ getNitterAuthor(itemSelectedDetails.link) }}</h3>
+                    <p
+                      class="card-subtitle text-muted"
+                      v-if="isReplyRetweet(itemSelectedDetails.title)"
+                    >
+                      {{ ReplyRetweet }}
+                    </p>
+                    <time class="card-subtitle mb-3 text-muted"
+                      >{{ formatDate(itemSelectedDetails.date) }}</time
+                    >
+                    <a
+                      class="toolbar-item"
+                      :href="itemSelectedDetails.link"
+                      target="_blank"
+                      title="tweet Link"
+                    >
+                      <span class="icon">{% inline "twitter.svg" %}</span>
+                    </a>
+                  </div>
+                  <div class="card-body">
+                    <div v-html="itemSelectedContent"></div>
+                    <img
+                      :src="itemSelectedDetails.image"
+                      v-if="itemSelectedDetails.image"
+                      class="mb-3"
+                    />
+                  </div>
                 </div>
-                <div class="card-body">
-                  <div v-html="itemSelectedContent"></div>
+              </div>
+              <!-- Ending of the nitter feed logic -->
+
+              <!-- Starting of general feed logic -->
+              <div v-else>
+                <h1><b>{{ itemSelectedDetails.title || 'untitled' }}</b></h1>
+                <div class="text-muted">
+                  <div>{{ feedsById[itemSelectedDetails.feed_id]?.title }}</div>
+                  <time>{{ formatDate(itemSelectedDetails.date) }}</time>
+                </div>
+                <hr />
+                <template v-if="!itemSelectedReadability">
                   <img
-                    :src="itemSelectedDetails.image"
                     v-if="itemSelectedDetails.image"
+                    :src="itemSelectedDetails.image"
                     class="mb-3"
                   />
-                </div>
+                  <audio
+                    v-if="itemSelectedDetails.podcast_url"
+                    class="w-100"
+                    controls
+                    :src="itemSelectedDetails.podcast_url"
+                  ></audio>
+                </template>
+                <div v-html="itemSelectedContent"></div>
               </div>
-            </div>
-            <div v-else>
-              <h1><b>{{ itemSelectedDetails.title || 'untitled' }}</b></h1>
-              <div class="text-muted">
-                <div>{{ feedsById[itemSelectedDetails.feed_id]?.title }}</div>
-                <time>{{ formatDate(itemSelectedDetails.date) }}</time>
-              </div>
-              <hr />
-              <template v-if="!itemSelectedReadability">
-                <img
-                  v-if="itemSelectedDetails.image"
-                  :src="itemSelectedDetails.image"
-                  class="mb-3"
-                />
-                <audio
-                  v-if="itemSelectedDetails.podcast_url"
-                  class="w-100"
-                  controls
-                  :src="itemSelectedDetails.podcast_url"
-                ></audio>
-              </template>
-              <div v-html="itemSelectedContent"></div>
+              <!-- Ending of general feed logic -->
             </div>
           </div>
         </div>
