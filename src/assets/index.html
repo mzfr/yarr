@@ -251,7 +251,7 @@
           <div v-for="folder in foldersWithFeeds" :key="folder.id">
             <label
               class="selectgroup mt-1"
-              :class="{'d-none': filterSelected && !(current.folder.id === folder.id || current.feed.folder_id === folder.id) && !filteredFolderStats[folder.id] && (!itemSelectedDetails || feedsById[itemSelectedDetails.feed_id].folder_id !== folder.id)}"
+              :class="{'d-none': filterSelected && !(current.folder.id === folder.id || current.feed.folder_id === folder.id) && !filteredFolderStats[folder.id] && (!itemSelectedDetails || feedsById[itemSelectedDetails.feed_id]?.folder_id !== folder.id)}"
             >
               <input
                 type="radio"

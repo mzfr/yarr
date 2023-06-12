@@ -1,22 +1,24 @@
 const TITLE = document.title;
 
-const debounce = (callback, wait) => {
-  let timeout;
+const debounce = (fn, delay) => {
+  let timeoutId;
   return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-      callback(...args);
-    }, wait);
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn(...args);
+    }, delay);
   };
 };
 
 const app = Vue.createApp({
   setup() {
-    const filterSelected = Vue.ref("");
+    var s = window.app.settings;
+    const ReplyRetweet = Vue.ref("");
+    const filterSelected = Vue.ref(s.filter);
     const folders = Vue.ref([]);
     const feeds = Vue.ref([]);
-    const feedSelected = Vue.ref("");
-    const feedListWidth = Vue.ref(200);
+    const feedSelected = Vue.ref(s.feed);
+    const feedListWidth = Vue.ref(s.feed_list_width) || Vue.ref(200);
     const feedNewChoice = Vue.ref([]);
     const feedNewChoiceSelected = Vue.ref("");
     const items = Vue.ref([]);
@@ -25,8 +27,8 @@ const app = Vue.createApp({
     const itemSelectedDetails = Vue.ref(null);
     const itemSelectedReadability = Vue.ref("");
     const itemSearch = Vue.ref("");
-    const itemSortNewestFirst = Vue.ref(false);
-    const itemListWidth = Vue.ref(300);
+    const itemSortNewestFirst = Vue.ref(s.sort_newest_first);
+    const itemListWidth = Vue.ref(s.item_list_width) || Vue.ref(300);
     const filteredFeedStats = Vue.ref({});
     const filteredFolderStats = Vue.ref({});
     const filteredTotalStats = Vue.ref(null);
@@ -40,12 +42,12 @@ const app = Vue.createApp({
     const fonts = Vue.ref(["", "serif", "monospace"]);
     const feedStats = Vue.ref({});
     const theme = Vue.reactive({
-      name: "",
-      font: "",
-      size: "",
+      name: s.theme_name,
+      font: s.theme_font,
+      size: s.theme_size,
     });
-    const refreshRate = Vue.ref("");
-    const authenticated = Vue.ref(false);
+    const refreshRate = Vue.ref(s.refresh_rate);
+    const authenticated = Vue.ref(window.app.authenticated);
     const feedErrors = Vue.ref({});
     const itemList = Vue.ref(null);
     const newFeedFolderId = Vue.ref(null);
@@ -54,6 +56,7 @@ const app = Vue.createApp({
     const api = window.api();
     Vue.onMounted(() => {
       refreshFeeds();
+      refreshItems();
     });
 
     // Vue.Computed properties
@@ -185,6 +188,7 @@ const app = Vue.createApp({
       }
     });
 
+    // When we click on any of the feed we get trigger this
     Vue.watch(itemSelected, (newVal, _) => {
       itemSelectedReadability.value = "";
       if (newVal === null) {
@@ -200,7 +204,12 @@ const app = Vue.createApp({
           api.items
             .update(itemSelectedDetails.value.id, { status: "read" })
             .then(() => {
-              feedStats.value[itemSelectedDetails.value.feed_id].unread -= 1;
+              if (
+                feedStats.value &&
+                feedStats.value[itemSelectedDetails.value.feed_id]
+              ) {
+                feedStats.value[itemSelectedDetails.value.feed_id].unread -= 1;
+              }
               const itemInList = items.value.find((i) => i.id === item.id);
               if (itemInList) {
                 itemInList.status = "read";
@@ -255,7 +264,6 @@ const app = Vue.createApp({
           acc[stat.feed_id] = stat;
           return acc;
         }, {});
-
         api.feeds.listErrors().then((errors) => {
           feedErrors.value = errors;
         });
@@ -274,10 +282,10 @@ const app = Vue.createApp({
         }
       }
       if (filterSelected) {
-        query.status = filterSelected;
+        query.status = filterSelected.value;
       }
       if (itemSearch) {
-        query.search = itemSearch;
+        query.search = itemSearch.value;
       }
       if (!itemSortNewestFirst) {
         query.oldest_first = true;
@@ -323,23 +331,25 @@ const app = Vue.createApp({
       });
     }
 
-    function itemListCloseToBottom() {
+    function itemListCloseToBottom(el) {
       // approx. vertical space at the bottom of the list (loading el & paddings) when 1rem = 16px
       const bottomSpace = 70;
-      const scale = (parseFloat(getComputedStyle(document.documentElement).fontSize) ||
-        16) / 16;
+      const scale =
+        (parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+          16) / 16;
 
-      const el = itemList.value;
-
+      // const el = itemList.value;
+      console.log(el);
       if (!el) return false;
-      const closeToBottom = el.scrollHeight - el.scrollTop - el.offsetHeight < bottomSpace * scale;
+      const closeToBottom =
+        el.scrollHeight - el.scrollTop - el.offsetHeight < bottomSpace * scale;
       return closeToBottom;
     }
 
-  function loadMoreItems(event, el) {
+    function loadMoreItems(event, el) {
       if (!itemsHasMore) return;
       if (loading.items) return;
-      if (itemListCloseToBottom()) refreshItems(true);
+      if (itemListCloseToBottom(el)) refreshItems(true);
     }
     const markItemsRead = () => {
       const query = getItemsQuery();
@@ -437,7 +447,8 @@ const app = Vue.createApp({
     function deleteFeed(feed) {
       if (confirm("Are you sure you want to delete " + feed.title + "?")) {
         api.feeds.delete(feed.id).then(() => {
-          const isSelected = !feedSelected ||
+          const isSelected =
+            !feedSelected ||
             feedSelected === "feed:" + feed.id ||
             (feed.folder_id && feedSelected === "folder:" + feed.folder_id);
           if (isSelected) feedSelected = null;
@@ -477,7 +488,8 @@ const app = Vue.createApp({
 
     function toggleItemStatus(item, targetStatus, fallbackStatus) {
       const oldStatus = item.status;
-      const newStatus = item.status !== targetStatus ? targetStatus : fallbackStatus;
+      const newStatus =
+        item.status !== targetStatus ? targetStatus : fallbackStatus;
 
       const updateStats = (status, incr) => {
         if (status === "unread" || status === "starred") {
@@ -629,7 +641,6 @@ const app = Vue.createApp({
         statsFolders[folder_id] += n;
         statsTotal += n;
       }
-
       filteredFeedStats.value = statsFeeds;
       filteredFolderStats.value = statsFolders;
       filteredTotalStats.value = statsTotal;
@@ -696,7 +707,9 @@ const app = Vue.createApp({
       renameFeed,
       renameFolder,
       deleteFeed,
-      deleteFolder
+      deleteFolder,
+      ReplyRetweet,
+      itemList,
     };
   },
 });
