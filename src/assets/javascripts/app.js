@@ -49,6 +49,7 @@ const app = Vue.createApp({
     const feedErrors = Vue.ref({});
     const itemList = Vue.ref(null);
     const newFeedFolderId = Vue.ref(null);
+    const content = Vue.ref(null);
 
     const api = window.api();
     Vue.onMounted(() => {
@@ -184,14 +185,14 @@ const app = Vue.createApp({
       }
     });
 
-    Vue.watch(itemSelected, (newVal, oldVal) => {
+    Vue.watch(itemSelected, (newVal, _) => {
       itemSelectedReadability.value = "";
       if (newVal === null) {
         itemSelectedDetails.value = null;
         return;
       }
-      if ($Vue.refs.content) {
-        $Vue.refs.content.scrollTop = 0;
+      if (content.value) {
+        content.value.scrollTop = 0;
       }
       api.items.get(newVal).then((item) => {
         itemSelectedDetails.value = item;
@@ -242,7 +243,7 @@ const app = Vue.createApp({
     );
 
     // methods
-    const refreshStats = (loopMode) => {
+    function refreshStats(loopMode) {
       return api.status().then((data) => {
         if (loopMode && !itemSelected.value) refreshItems();
 
@@ -259,8 +260,8 @@ const app = Vue.createApp({
           feedErrors.value = errors;
         });
       });
-    };
-    const getItemsQuery = () => {
+    }
+    function getItemsQuery() {
       const query = {};
       if (feedSelected) {
         const parts = feedSelected.value.split(":", 2);
@@ -282,17 +283,17 @@ const app = Vue.createApp({
         query.oldest_first = true;
       }
       return query;
-    };
-    const refreshFeeds = async () => {
+    }
+    async function refreshFeeds() {
       const values_1 = await Promise.all([
         api.folders.list(),
         api.feeds.list(),
       ]);
       folders.value = values_1[0];
       feeds.value = values_1[1];
-    };
+    }
 
-    const refreshItems = (loadMore) => {
+    function refreshItems(loadMore) {
       if (feedSelected === null) {
         items.value = [];
         return;
@@ -320,28 +321,26 @@ const app = Vue.createApp({
           }
         });
       });
-    };
+    }
 
-    const itemListCloseToBottom = () => {
+    function itemListCloseToBottom() {
       // approx. vertical space at the bottom of the list (loading el & paddings) when 1rem = 16px
       const bottomSpace = 70;
-      const scale =
-        (parseFloat(getComputedStyle(document.documentElement).fontSize) ||
-          16) / 16;
+      const scale = (parseFloat(getComputedStyle(document.documentElement).fontSize) ||
+        16) / 16;
 
       const el = itemList.value;
 
       if (!el) return false;
-      const closeToBottom =
-        el.scrollHeight - el.scrollTop - el.offsetHeight < bottomSpace * scale;
+      const closeToBottom = el.scrollHeight - el.scrollTop - el.offsetHeight < bottomSpace * scale;
       return closeToBottom;
-    };
+    }
 
-    const loadMoreItems = (event, el) => {
+  function loadMoreItems(event, el) {
       if (!itemsHasMore) return;
       if (loading.items) return;
       if (itemListCloseToBottom()) refreshItems(true);
-    };
+    }
     const markItemsRead = () => {
       const query = getItemsQuery();
       api.items.mark_read(query).then(() => {
@@ -353,12 +352,12 @@ const app = Vue.createApp({
       });
     };
 
-    const toggleFolderExpanded = (folder) => {
+    function toggleFolderExpanded(folder) {
       folder.is_expanded = !folder.is_expanded;
       api.folders.update(folder.id, { is_expanded: folder.is_expanded });
-    };
+    }
 
-    const formatDate = (datestr) => {
+    function formatDate(datestr) {
       const options = {
         year: "numeric",
         month: "long",
@@ -367,17 +366,17 @@ const app = Vue.createApp({
         minute: "2-digit",
       };
       return new Date(datestr).toLocaleDateString(undefined, options);
-    };
+    }
 
-    const moveFeed = (feed, folder) => {
+    function moveFeed(feed, folder) {
       const folder_id = folder ? folder.id : null;
       api.feeds.update(feed.id, { folder_id: folder_id }).then(() => {
         feed.folder_id = folder_id;
         refreshStats();
       });
-    };
+    }
 
-    const moveFeedToNewFolder = (feed) => {
+    function moveFeedToNewFolder(feed) {
       const title = prompt("Enter folder name:");
       if (!title) return;
       api.folders.create({ title: title }).then((folder) => {
@@ -387,9 +386,9 @@ const app = Vue.createApp({
           });
         });
       });
-    };
+    }
 
-    const createNewFeedFolder = () => {
+    function createNewFeedFolder() {
       const title = prompt("Enter folder name:");
       if (!title) return;
       api.folders.create({ title: title }).then((result) => {
@@ -401,9 +400,9 @@ const app = Vue.createApp({
           });
         });
       });
-    };
+    }
 
-    const renameFolder = (folder) => {
+    function renameFolder(folder) {
       const newTitle = prompt("Enter new title", folder.title);
       if (newTitle) {
         api.folders.update(folder.id, { title: newTitle }).then(() => {
@@ -411,11 +410,11 @@ const app = Vue.createApp({
           folders.value.sort((a, b) => a.title.localeCompare(b.title));
         });
       }
-    };
+    }
 
-    const deleteFolder = (folder) => {
+    function deleteFolder(folder) {
       if (confirm("Are you sure you want to delete " + folder.title + "?")) {
-        api.folders.delete(folder.id).then(() => {
+        api.folders.remove(folder.id).then(() => {
           if (feedSelected === "folder:" + folder.id) {
             items.value = [];
             feedSelected = "";
@@ -424,7 +423,7 @@ const app = Vue.createApp({
           refreshFeeds();
         });
       }
-    };
+    }
 
     function renameFeed(feed) {
       const newTitle = Vue.ref(prompt("Enter new title", feed.title));
@@ -435,11 +434,10 @@ const app = Vue.createApp({
       }
     }
 
-    const deleteFeed = (feed) => {
+    function deleteFeed(feed) {
       if (confirm("Are you sure you want to delete " + feed.title + "?")) {
         api.feeds.delete(feed.id).then(() => {
-          const isSelected =
-            !feedSelected ||
+          const isSelected = !feedSelected ||
             feedSelected === "feed:" + feed.id ||
             (feed.folder_id && feedSelected === "folder:" + feed.folder_id);
           if (isSelected) feedSelected = null;
@@ -448,13 +446,14 @@ const app = Vue.createApp({
           refreshFeeds();
         });
       }
-    };
+    }
 
     function createFeed(event) {
       const form = event.target;
       const data = {
         url: form.querySelector("input[name=url]").value,
-        folder_id: parseInt(form.querySelector("select[name=folder_id]").value) || null,
+        folder_id:
+          parseInt(form.querySelector("select[name=folder_id]").value) || null,
       };
       if (feedNewChoiceSelected.value) {
         data.url = feedNewChoiceSelected.value;
@@ -476,10 +475,9 @@ const app = Vue.createApp({
       });
     }
 
-    const toggleItemStatus = (item, targetStatus, fallbackStatus) => {
+    function toggleItemStatus(item, targetStatus, fallbackStatus) {
       const oldStatus = item.status;
-      const newStatus =
-        item.status !== targetStatus ? targetStatus : fallbackStatus;
+      const newStatus = item.status !== targetStatus ? targetStatus : fallbackStatus;
 
       const updateStats = (status, incr) => {
         if (status === "unread" || status === "starred") {
@@ -495,22 +493,21 @@ const app = Vue.createApp({
         if (itemInList) itemInList.status = newStatus;
         item.status = newStatus;
       });
-    };
+    }
 
-    const toggleItemStarred = (item) => {
+    function toggleItemStarred(item) {
       toggleItemStatus(item, "starred", "read");
-    };
+    }
 
-    const toggleItemRead = (item) => {
+    function toggleItemRead(item) {
       toggleItemStatus(item, "unread", "read");
-    };
+    }
 
-    const addToPocket = (item) => {
-      console.log("WORKING!");
+    function addToPocket(item) {
       api.add_to_pocket(item.link);
-    };
+    }
 
-    const importOPML = (event) => {
+    function importOPML(event) {
       const input = event.target;
       const form = document.querySelector("#opml-import-form");
       $refs.menuDropdown.hide();
@@ -519,15 +516,15 @@ const app = Vue.createApp({
         refreshFeeds();
         refreshStats();
       });
-    };
+    }
 
-    const logout = () => {
+    function logout() {
       api.logout().then(() => {
         document.location.reload();
       });
-    };
+    }
 
-    const toggleReadability = () => {
+    function toggleReadability() {
       if (itemSelectedReadability.value) {
         itemSelectedReadability.value = null;
         return;
@@ -541,7 +538,7 @@ const app = Vue.createApp({
           loading.readability = false;
         });
       }
-    };
+    }
 
     function showSettings(settingsOption) {
       settings.value = settingsOption;
@@ -552,33 +549,33 @@ const app = Vue.createApp({
       }
     }
 
-    const resizeFeedList = (width) => {
+    function resizeFeedList(width) {
       feedListWidth.value = Math.min(Math.max(200, width), 700);
-    };
+    }
 
-    const resizeItemList = (width) => {
+    function resizeItemList(width) {
       itemListWidth.value = Math.min(Math.max(200, width), 700);
-    };
+    }
 
-    const resetFeedChoice = () => {
+    function resetFeedChoice() {
       feedNewChoice.value = [];
       feedNewChoiceSelected.value = "";
-    };
+    }
 
-    const incrFont = (x) => {
+    function incrFont(x) {
       theme.size = +(theme.size + 0.1 * x).toFixed(1);
-    };
+    }
 
-    const isNitterLink = (url) => {
+    function isNitterLink(url) {
       return url.includes("nitter");
-    };
+    }
 
-    const getNitterAuthor = (url) => {
+    function getNitterAuthor(url) {
       const parseUrl = new URL(url);
       return parseUrl.pathname.split("/")[1];
-    };
+    }
 
-    const isReplyRetweet = (title) => {
+    function isReplyRetweet(title) {
       if (title.startsWith("R to ")) {
         ReplyRetweet.value = title
           .replace("R to", "Replying to")
@@ -597,16 +594,16 @@ const app = Vue.createApp({
         ReplyRetweet.value = null;
       }
       return Boolean(ReplyRetweet.value);
-    };
+    }
 
-    const fetchAllFeeds = () => {
+    function fetchAllFeeds() {
       if (loading.feeds) return;
       api.feeds.refresh().then(() => {
         refreshStats();
       });
-    };
+    }
 
-    const computeStats = () => {
+    function computeStats() {
       const filter = filterSelected.value;
       if (!filter) {
         filteredFeedStats.value = {};
@@ -636,7 +633,7 @@ const app = Vue.createApp({
       filteredFeedStats.value = statsFeeds;
       filteredFolderStats.value = statsFolders;
       filteredTotalStats.value = statsTotal;
-    };
+    }
 
     return {
       filterSelected,
@@ -652,6 +649,7 @@ const app = Vue.createApp({
       itemSelectedDetails,
       itemSelectedReadability,
       itemSearch,
+      content,
       itemSortNewestFirst,
       itemListWidth,
       filteredFeedStats,
@@ -697,7 +695,8 @@ const app = Vue.createApp({
       newFeedFolderId,
       renameFeed,
       renameFolder,
-      deleteFeed
+      deleteFeed,
+      deleteFolder
     };
   },
 });
