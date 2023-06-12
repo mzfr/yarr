@@ -136,7 +136,7 @@
             <div class="selectgroup-label d-flex align-items-center w-100" v-if="folder.id">
               <span class="icon mr-2" :class="{expanded: folder.is_expanded}"
                 @click.prevent="toggleFolderExpanded(folder)">
-                <img src="chevron-right.svg" alt="chevron" />
+                {% inline "chevron-right.svg" %}
               </span>
               <span class="flex-fill text-left text-truncate">{{ folder.title }}</span>
               <span class="counter text-right">{{ filteredFolderStats[folder.id] || '' }}</span>
@@ -152,8 +152,8 @@
                 <span class="icon mr-2" v-else><img :src="'./api/feeds/'+feed.id+'/icon'" alt="" loading="lazy"></span>
                 <span class="flex-fill text-left text-truncate">{{ feed.title }}</span>
                 <span class="counter text-right">{{ filteredFeedStats[feed.id] || '' }}</span>
-                <span class="icon flex-shrink-0 mx-2" :title="feed_errors[feed.id]"
-                  v-if="!filterSelected && feed_errors[feed.id]">
+                <span class="icon flex-shrink-0 mx-2" :title="feedErrors[feed.id]"
+                  v-if="!filterSelected && feedErrors[feed.id]">
                   {% inline "alert-circle.svg" %}
                 </span>
               </div>
@@ -210,11 +210,13 @@
           </button>
           <div class="dropdown-divider"></div>
           <header class="dropdown-header">Move to...</header>
-          <button class="dropdown-item" v-if="folder.id != current.feed.folder_id" v-for="folder in folders"
+          <div v-for="folder in folders">
+          <button class="dropdown-item"  v-if="folder.id != current.feed.folder_id" 
             @click="moveFeed(current.feed, folder)">
             <span class="icon mr-1">{% inline "folder.svg" %}</span>
             {{ folder.title }}
           </button>
+          </div>
           <button class="dropdown-item text-muted" @click="moveFeed(current.feed, null)" v-if="current.feed.folder_id">
             <span class="icon mr-1">{% inline "folder-minus.svg" %}</span>
             ──
@@ -247,7 +249,7 @@
         </dropdown>
       </div>
       <div id="item-list-scroll" class="p-2 overflow-auto border-top flex-grow-1" v-scroll="loadMoreItems"
-        ref="itemlist">
+        ref="itemList">
         <label v-for="item in items" :key="item.id" class="selectgroup">
           <input type="radio" name="item" :value="item.id" v-model="itemSelected">
           <div class="selectgroup-label d-flex flex-column">
@@ -269,8 +271,8 @@
         </label>
         <button class="btn btn-link btn-block loading my-3" v-if="itemsHasMore"></button>
       </div>
-      <div class="px-3 py-2 border-top text-danger text-break" v-if="feed_errors[current.feed.id]">
-        {{ feed_errors[current.feed.id] }}
+      <div class="px-3 py-2 border-top text-danger text-break" v-if="feedErrors[current.feed.id]">
+        {{ feedErrors[current.feed.id] }}
       </div>
     </div>
     <!-- item show -->
@@ -366,12 +368,12 @@
             :readonly="feedNewChoice.length > 0" placeholder="https://example.com/feed" v-focus>
           <label for="feed-folder" class="mt-3 d-block">
             Folder
-            <a href="#" class="float-right text-decoration-none" v-on:click.prevent="createNewFeedFolder()">new
+            <a href="#" class="float-right text-decoration-none" @click.prevent="createNewFeedFolder()">new
               folder</a>
           </label>
-          <select class="form-control" id="feed-folder" name="folder_id" ref="newFeedFolder">
+          <select class="form-control" id="feed-folder" name="folder_id" ref="newFeedFolderId">
             <option value="">---</option>
-            <option :value="folder.id" v-for="folder in folders"
+            <option v-for="folder in folders" :value="folder.id" :key="folder.id"
               :selected="folder.id === current.feed.folder_id || folder.id === current.folder.id">{{ folder.title }}
             </option>
           </select>
