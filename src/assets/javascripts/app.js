@@ -640,27 +640,29 @@ const app = Vue.createApp({
         for (const [_, value] of Object.entries(feedStats[id])) {
           if (typeof value === "object" && filter in value) {
             n = value[filter];
-            
+
             // Adding non number to number messes JS
             if (isNaN(n)) {
               continue;
             }
-            
+
             if (!statsFolders[folder_id]) {
               statsFolders[folder_id] = 0;
             }
-            
+
             // Instead of checking with the `id` we check with feed_id
             // so that we don't get duplicates
-            statsFeeds[value['feed_id']] = n;
+            statsFeeds[value["feed_id"]] = n;
             statsFolders[folder_id] += n;
-
           }
         }
       }
 
       // Find the sum of all the values in the statsFeeds object
-      statsTotal = Object.values(statsFeeds).reduce((total, value) => total + value, 0);
+      statsTotal = Object.values(statsFeeds).reduce(
+        (total, value) => total + value,
+        0
+      );
 
       filteredFeedStats.value = statsFeeds;
       filteredFolderStats.value = statsFolders;
