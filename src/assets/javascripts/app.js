@@ -313,7 +313,7 @@ const app = Vue.createApp({
 
       const query = getItemsQuery();
       if (loadMore) {
-        query.after = items.value[items.value.length - 1].id;
+          query.after = items.value[items.value.length - 1].id;
       }
 
       loading.items = true;
@@ -328,7 +328,7 @@ const app = Vue.createApp({
 
         // load more if there's some space left at the bottom of the item list.
         Vue.nextTick(() => {
-          if (itemsHasMore && !loading.items && itemListCloseToBottom()) {
+          if (itemsHasMore.value && !loading.items && itemListCloseToBottom()) {
             refreshItems(true);
           }
         });
@@ -356,9 +356,9 @@ const app = Vue.createApp({
     }
     const markItemsRead = () => {
       const query = getItemsQuery();
-      api.items.mark_read(query).then(() => {
+      api.items.markRead(query).then(() => {
         items.value = [];
-        itemsPage.value = { cur: 1, num: 1 };
+        // itemsPage.value = { cur: 1, num: 1 };
         itemSelected.value = null;
         itemsHasMore.value = false;
         refreshStats();
@@ -449,7 +449,7 @@ const app = Vue.createApp({
 
     function deleteFeed(feed) {
       if (confirm("Are you sure you want to delete " + feed.title + "?")) {
-        api.feeds.delete(feed.id).then(() => {
+        api.feeds.remove(feed.id).then(() => {
           const isSelected =
             !feedSelected ||
             feedSelected === "feed:" + feed.id ||
@@ -637,10 +637,9 @@ const app = Vue.createApp({
         }
 
         // For every object in the feedStats[id] we take out the filter(if it exists)
-        for (const [_, value] of Object.entries(feedStats[id])) {
+        for (const [key, value] of Object.entries(feedStats[id])) {
           if (typeof value === "object" && filter in value) {
             n = value[filter];
-
             // Adding non number to number messes JS
             if (isNaN(n)) {
               continue;
@@ -663,7 +662,6 @@ const app = Vue.createApp({
         (total, value) => total + value,
         0
       );
-
       filteredFeedStats.value = statsFeeds;
       filteredFolderStats.value = statsFolders;
       filteredTotalStats.value = statsTotal;
