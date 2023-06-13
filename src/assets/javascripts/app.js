@@ -149,6 +149,7 @@ const app = Vue.createApp({
       }
     );
 
+    // This is the setting the stats in the browser tab title
     Vue.watch(
       feedStats,
       debouncedHandler(() => {
@@ -159,6 +160,7 @@ const app = Vue.createApp({
           },
           0
         );
+
         if (unreadCount) {
           document.title = title + " (" + unreadCount + ")";
         } else {
@@ -209,12 +211,7 @@ const app = Vue.createApp({
           api.items
             .update(itemSelectedDetails.value.id, { status: "read" })
             .then(() => {
-              if (
-                feedStats.value &&
-                feedStats.value[itemSelectedDetails.value.feed_id]
-              ) {
-                feedStats.value[itemSelectedDetails.value.feed_id].unread -= 1;
-              }
+              feedStats.value[itemSelectedDetails.value.feed_id].unread -= 1;
               const itemInList = items.value.find((i) => i.id === item.id);
               if (itemInList) {
                 itemInList.status = "read";
@@ -313,7 +310,6 @@ const app = Vue.createApp({
         items.value = [];
         return;
       }
-      console.log(filteredFeedStats);
 
       const query = getItemsQuery();
       if (loadMore) {
@@ -634,19 +630,38 @@ const app = Vue.createApp({
       const statsFeeds = {};
       const statsFolders = {};
       let statsTotal = 0;
+      let n = 0;
       for (const [id, folder_id] of Object.entries(feeds)) {
-        if (!feedStats[id]) continue;
-
-        const n = feedStats[id][filter] ?? 0;
-
-        if (!statsFolders[folder_id]) {
-          statsFolders[folder_id] = 0;
+        if (!feedStats[id]) {
+          continue;
         }
 
-        statsFeeds[id] = n;
-        statsFolders[folder_id] += n;
-        statsTotal += n;
+        // For every object in the feedStats[id] we take out the filter(if it exists)
+        for (const [_, value] of Object.entries(feedStats[id])) {
+          if (typeof value === "object" && filter in value) {
+            n = value[filter];
+            
+            // Adding non number to number messes JS
+            if (isNaN(n)) {
+              continue;
+            }
+            
+            if (!statsFolders[folder_id]) {
+              statsFolders[folder_id] = 0;
+            }
+            
+            // Instead of checking with the `id` we check with feed_id
+            // so that we don't get duplicates
+            statsFeeds[value['feed_id']] = n;
+            statsFolders[folder_id] += n;
+
+          }
+        }
       }
+
+      // Find the sum of all the values in the statsFeeds object
+      statsTotal = Object.values(statsFeeds).reduce((total, value) => total + value, 0);
+
       filteredFeedStats.value = statsFeeds;
       filteredFolderStats.value = statsFolders;
       filteredTotalStats.value = statsTotal;
