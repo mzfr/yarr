@@ -85,6 +85,11 @@
               New Feed
             </button>
             <div class="dropdown-divider"></div>
+            <button class="dropdown-item" @click="createNewFeedFolder()">
+              <span class="icon mr-1">{% inline "plus.svg" %}</span>
+              New Folder
+            </button>
+            <div class="dropdown-divider"></div>
             <button class="dropdown-item" @click="fetchAllFeeds()">
               <span class="icon mr-1">{% inline "rotate-cw.svg" %}</span>
               Refresh Feeds
