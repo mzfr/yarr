@@ -4,6 +4,7 @@ const xfetch = (resource, init) => {
     init['headers'] = init['headers'] || {};
     init['headers']['x-requested-by'] = 'yarr';
   }
+  init['mode'] = 'cors';
   return fetch(resource, init);
 };
 
