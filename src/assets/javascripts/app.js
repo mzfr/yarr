@@ -496,7 +496,7 @@ const app = Vue.createApp({
 
       const updateStats = (status, incr) => {
         if (status === "unread" || status === "starred") {
-          feedStats[item.feed_id][status] += incr;
+          feedStats["_value"][item.feed_id][status] += incr;
         }
       };
 
@@ -733,6 +733,8 @@ const app = Vue.createApp({
       deleteFolder,
       ReplyRetweet,
       itemList,
+      moveFeedToNewFolder,
+      moveFeed,
     };
   },
 });
