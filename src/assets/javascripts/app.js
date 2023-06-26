@@ -275,7 +275,7 @@ const app = Vue.createApp({
     }
     function getItemsQuery() {
       const query = {};
-      if (feedSelected) {
+      if (feedSelected && feedSelected.value) {
         const parts = feedSelected.value.split(":", 2);
         const type = parts[0];
         const guid = parts[1];

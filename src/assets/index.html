@@ -30,10 +30,9 @@
   <body class="theme-{% .settings.theme_name %}">
     <div
       id="app"
-      class="d-flex"
-      :class="{'feed-selected': feedSelected.value !== null, 'item-selected': itemSelected !== null}"
       v-cloak
     >
+    <div id="app-content" class="d-flex" :class="{'feed-selected': feedSelected && feedSelected.value !== null, 'item-selected': itemSelected !== null}">
       <!-- feed list -->
       <div
         id="col-feed-list"
@@ -876,6 +875,7 @@
         </div>
       </modal>
     </div>
+  </div>
     <!-- internal -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="./static/javascripts/api.js"></script>
